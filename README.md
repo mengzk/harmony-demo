@@ -1,0 +1,9 @@
+# 项目说明
+
+1. [项目结构文档](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/start-with-ets-stage-V5)
+2. [ArkTS组件](https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/arkui-declarative-comp-V5)
+3. [网络请求](https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/js-apis-http-V5)
+5. [文件](https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/js-apis-file-fileuri-V5)
+6. [数据管理](https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/js-apis-data-commontype-V5)
+
+
