@@ -1,6 +1,7 @@
 {
   "src": [
     "pages/Index",
-    "pages/Two"
+    "pages/Two",
+    "pages/WebPage"
   ]
 }

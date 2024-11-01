@@ -5,5 +5,6 @@
 3. [网络请求](https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/js-apis-http-V5)
 5. [文件](https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/js-apis-file-fileuri-V5)
 6. [数据管理](https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/js-apis-data-commontype-V5)
-
+7. [自定义组件](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/arkts-page-custom-components-lifecycle-V5)
+8. [状态管理](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/arkts-component-state-management-V5)
 

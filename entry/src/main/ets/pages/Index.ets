@@ -22,7 +22,7 @@ struct Index {
         })
         .onClick(() => {
           console.log('======>')
-          router.pushUrl({ url: 'pages/Two' }).then(() => {
+          router.pushUrl({ url: 'pages/WebPage' }).then(() => {
             console.info('Succeeded in jumping to the second page.')
           }).catch((err: BusinessError) => {
             console.error(`Failed to jump to the second page. Code is ${err.code}, message is ${err.message}`)
