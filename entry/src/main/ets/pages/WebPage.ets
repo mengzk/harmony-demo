@@ -18,20 +18,26 @@ class JSBridge {
     console.log('--------> toast');
   }
 
-  asyncTest(testStr:string): string {
+  asyncTest(testStr:string): Promise<string> {
     console.log('--------> async Test' + testStr);
-    return "asyncTest";
+    return new Promise(resolve => {
+      const date = Date.now();
+      setTimeout(() => {
+        resolve('结果' + date)
+      }, 3000)
+    });
   }
 }
+
 
 @Entry
 @Component
 struct WebPage {
   controller: webview.WebviewController = new webview.WebviewController();
-  @State url: string = 'http://192.168.253.155:8300/test';
-  @State incognito: boolean = true;
   private localStorage: string =
     "if (typeof(Storage) !== 'undefined') {  localStorage.setItem('color', 'Red'); }";
+  @State url: string = 'http://192.168.253.155:8091';
+  @State incognito: boolean = true;
   @State scripts: Array<ScriptItem> = [
     { script: this.localStorage, scriptRules: ["*"] }
   ];
@@ -52,19 +58,19 @@ struct WebPage {
 
   build() {
     Column() {
-      Web({ src: this.url, controller: this.controller, incognitoMode: this.incognito })
-        // .domStorageAccess(true)
-        // .fileAccess(true)
+      Web({ src: this.url, controller: this.controller })
+        .domStorageAccess(true)
+        .fileAccess(true)
         .javaScriptAccess(true)
-        // .mixedMode(MixedMode.All)
-        // .zoomAccess(false)
-        // .databaseAccess(true)
-        // .geolocationAccess(true)
-        // .cacheMode(CacheMode.None)
-        // .copyOptions(CopyOptions.None)
-        // .webStandardFont("sans-serif")
-        // .javaScriptOnDocumentStart(this.scripts)
-        // .keyboardAvoidMode(WebKeyboardAvoidMode.RESIZE_VISUAL)
+        .mixedMode(MixedMode.All)
+        .zoomAccess(false)
+        .databaseAccess(true)
+        .geolocationAccess(true)
+        .cacheMode(CacheMode.None)
+        .copyOptions(CopyOptions.None)
+        .webStandardFont("sans-serif")
+        .javaScriptOnDocumentStart(this.scripts)
+        .keyboardAvoidMode(WebKeyboardAvoidMode.RESIZE_VISUAL)
         .onPageBegin((event) => {
           if (event) {
             console.log('begin url:' + event.url);
@@ -73,12 +79,14 @@ struct WebPage {
         .onPageEnd((event) => {
           if (event) {
             console.log('end url:' + event.url);
-            try {
-              this.controller.registerJavaScriptProxy(this.jsBridge, "bnq", ["test", "toast"], ["asyncTest"])
-            } catch (err) {
-              console.log('-----> registerJavaScriptProxy', err)
-            }
           }
+        })
+        .javaScriptProxy({
+          object: this.jsBridge,
+          name: "bnqBridge",
+          methodList: ["test", "toast", "asyncTest"],
+          // asyncMethodList: ["asyncTest"],
+          controller: this.controller,
         })
         .onProgressChange((event) => {
           if (event) {
