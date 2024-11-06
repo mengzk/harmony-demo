@@ -8,3 +8,11 @@
 7. [自定义组件](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/arkts-page-custom-components-lifecycle-V5)
 8. [状态管理](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/arkts-component-state-management-V5)
 
+
+
+# 三方库
+
+1. [harmony-utils](https://ohpm.openharmony.cn/#/cn/detail/@pura%2Fharmony-utils)
+2. [Axios](https://ohpm.openharmony.cn/#/cn/detail/@ohos%2Faxios)
+
+
