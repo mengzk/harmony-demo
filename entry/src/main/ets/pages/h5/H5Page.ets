@@ -25,9 +25,8 @@ struct WebPage {
   aboutToAppear(): void {
     console.log("-------->aboutToAppear")
     emitter.on("web-page", (data: emitter.GenericEventData<string>) => {
-      console.log('->>>>>>>>>>>', this.ports.length, data.data)
+      console.log('>>>>>>>>>>>', this.ports.length, data.data)
       try {
-
         this.ports[1].postMessageEvent("123456-30953410231231=1-231");
         // const msg: webview.WebMessageExt = new webview.WebMessageExt();
         // msg.setType(1)
