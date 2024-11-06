@@ -7,9 +7,26 @@ import { BusinessError } from '@kit.BasicServicesKit';
 struct Index {
   @State message: string = 'Hello World';
 
+
+  aboutToAppear(): void {
+    setTimeout(() => {
+      console.log("--------> aboutToAppear")
+      this.gotoH5();
+    }, 1000)
+  }
+
   onPageShow(): void {
     console.log("-------->")
   }
+
+  gotoH5() {
+    router.pushUrl({ url: 'pages/h5/H5Page' }).then(() => {
+      console.info('Succeeded in jumping to the second page.')
+    }).catch((err: BusinessError) => {
+      console.error(`Failed to jump to the second page. Code is ${err.code}, message is ${err.message}`)
+    })
+  }
+
 
   build() {
     Column() {
@@ -22,11 +39,7 @@ struct Index {
         })
         .onClick(() => {
           console.log('======>')
-          router.pushUrl({ url: 'pages/WebPage' }).then(() => {
-            console.info('Succeeded in jumping to the second page.')
-          }).catch((err: BusinessError) => {
-            console.error(`Failed to jump to the second page. Code is ${err.code}, message is ${err.message}`)
-          })
+          this.gotoH5();
         })
 
       Text("好好睡")

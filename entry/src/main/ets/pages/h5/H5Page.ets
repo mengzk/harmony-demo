@@ -5,29 +5,7 @@ import { webview } from '@kit.ArkWeb';
  * https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/ts-basic-components-web-V5
  */
 
-class JSBridge {
-  constructor() {
-  }
-
-  test(): string {
-    console.log('--------> test');
-    return "test";
-  }
-
-  toast(): void {
-    console.log('--------> toast');
-  }
-
-  asyncTest(testStr:string): Promise<string> {
-    console.log('--------> async Test' + testStr);
-    return new Promise(resolve => {
-      const date = Date.now();
-      setTimeout(() => {
-        resolve('结果' + date)
-      }, 3000)
-    });
-  }
-}
+import JSBridge from './bridge/H5Bridge'
 
 
 @Entry
@@ -36,6 +14,7 @@ struct WebPage {
   controller: webview.WebviewController = new webview.WebviewController();
   private localStorage: string =
     "if (typeof(Storage) !== 'undefined') {  localStorage.setItem('color', 'Red'); }";
+
   @State url: string = 'http://192.168.253.155:8091';
   @State incognito: boolean = true;
   @State scripts: Array<ScriptItem> = [
@@ -84,7 +63,7 @@ struct WebPage {
         .javaScriptProxy({
           object: this.jsBridge,
           name: "bnqBridge",
-          methodList: ["test", "toast", "asyncTest"],
+          methodList: ["test", "chooseMedia", "choosePhoto"],
           // asyncMethodList: ["asyncTest"],
           controller: this.controller,
         })
