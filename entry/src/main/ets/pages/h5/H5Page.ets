@@ -1,5 +1,5 @@
 import { webview } from '@kit.ArkWeb';
-
+import { emitter } from '@kit.BasicServicesKit';
 /**
  * H5加载页
  * https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/ts-basic-components-web-V5
@@ -12,26 +12,37 @@ import JSBridge from './bridge/H5Bridge'
 @Component
 struct WebPage {
   controller: webview.WebviewController = new webview.WebviewController();
+  ports: webview.WebMessagePort[] = [];
   private localStorage: string =
     "if (typeof(Storage) !== 'undefined') {  localStorage.setItem('color', 'Red'); }";
-
   @State url: string = 'http://192.168.253.155:8091';
   @State incognito: boolean = true;
   @State scripts: Array<ScriptItem> = [
     { script: this.localStorage, scriptRules: ["*"] }
   ];
-
   @State jsBridge: JSBridge = new JSBridge();
 
   aboutToAppear(): void {
+    console.log("-------->aboutToAppear")
+    emitter.on("web-page", (data: emitter.GenericEventData<string>) => {
+      console.log('->>>>>>>>>>>', this.ports.length, data.data)
+      try {
 
+        this.ports[1].postMessageEvent("123456-30953410231231=1-231");
+        // const msg: webview.WebMessageExt = new webview.WebMessageExt();
+        // msg.setType(1)
+        // msg.setString("1234567890-0765432")
+        // this.ports[0].postMessageEventExt(msg);
+      } catch (e) {
+        console.log('------> catch', e.code, e.message)
+      }
+    });
   }
 
   aboutToDisappear(): void {
   }
 
   onPageShow(): void {
-    console.log("-------->")
 
   }
 
@@ -58,12 +69,15 @@ struct WebPage {
         .onPageEnd((event) => {
           if (event) {
             console.log('end url:' + event.url);
+            this.ports = this.controller.createWebMessagePorts();
+            this.controller.postMessage('__init_port__', [this.ports[0]], '*');
+            // this.ports[1].postMessageEvent("post message from ets to html5");
           }
         })
         .javaScriptProxy({
           object: this.jsBridge,
           name: "bnqBridge",
-          methodList: ["test", "chooseMedia", "choosePhoto"],
+          methodList: this.jsBridge.methodList,
           // asyncMethodList: ["asyncTest"],
           controller: this.controller,
         })
