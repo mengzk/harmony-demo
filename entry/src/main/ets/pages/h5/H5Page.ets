@@ -3,6 +3,7 @@ import { emitter } from '@kit.BasicServicesKit';
 /**
  * H5加载页
  * https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/ts-basic-components-web-V5
+ * https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/web-app-page-data-channel-V5
  */
 
 import JSBridge from './bridge/H5Bridge'
@@ -23,19 +24,36 @@ struct WebPage {
   @State jsBridge: JSBridge = new JSBridge();
 
   aboutToAppear(): void {
+
     console.log("-------->aboutToAppear")
     emitter.on("web-page", (data: emitter.GenericEventData<string>) => {
       console.log('>>>>>>>>>>>', this.ports.length, data.data)
       try {
         this.ports[1].postMessageEvent("123456-30953410231231=1-231");
-        // const msg: webview.WebMessageExt = new webview.WebMessageExt();
-        // msg.setType(1)
-        // msg.setString("1234567890-0765432")
-        // this.ports[0].postMessageEventExt(msg);
+
+        // 传递runJavaScript侧代码方法。
+        // this.controller.runJavaScript('htmlTest(param)');
+        // this.controller.runJavaScript(`function changeColor(){document.getElementById('text').style.color = 'red'}`);
       } catch (e) {
         console.log('------> catch', e.code, e.message)
       }
     });
+  }
+
+  getMessagePorts() {
+    // 配置Web开启调试模式
+    // webview.WebviewController.setWebDebuggingAccess(true);
+
+    // const userAgent = this.controller.getUserAgent() + '-hmos';
+    // this.controller.setCustomUserAgent(userAgent);
+
+    this.ports = this.controller.createWebMessagePorts();
+
+    this.ports[1].onMessageEvent((result) => {
+      console.log('-----> onMessageEvent' , result)
+    });
+
+    this.controller.postMessage('__init_port__', [this.ports[0]], '*');
   }
 
   aboutToDisappear(): void {
@@ -68,9 +86,7 @@ struct WebPage {
         .onPageEnd((event) => {
           if (event) {
             console.log('end url:' + event.url);
-            this.ports = this.controller.createWebMessagePorts();
-            this.controller.postMessage('__init_port__', [this.ports[0]], '*');
-            // this.ports[1].postMessageEvent("post message from ets to html5");
+            this.getMessagePorts();
           }
         })
         .javaScriptProxy({
