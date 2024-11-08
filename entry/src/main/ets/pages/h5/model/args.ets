@@ -1,5 +1,5 @@
 /**
- * Author: user
+ * Author: Meng
  * Date: 2024/11/05
  * Modify: 2024/11/05
  * Desc: 数据类型
@@ -34,9 +34,11 @@ export interface PhotoArg {
  */
 export interface EmitArg {
   once?: boolean;
-  key?: string;
-  event?: string;
-  data?: string|object;
+  mode?: boolean;
+  time?: number; // 时间戳
+  key?: string; // 标识
+  event?: string; // 事件
+  data?: string|object; // 参数
 }
 
 export interface AudioArg {

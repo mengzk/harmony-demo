@@ -30,6 +30,7 @@ import {
   RouteArg,
   PageArg,
 } from '../model/args'
+import { promptAction } from '@kit.ArkUI';
 
 export default class H5Bridge {
   methodList: Array<string> = [];
@@ -39,7 +40,7 @@ export default class H5Bridge {
   }
 
   getMethods(obj: ESObject) {
-    const filterKey = ['constructor', 'getMethods'];
+    const filterKey = ['constructor', 'getMethods', 'destroy'];
     let keys = Object.getOwnPropertyNames(obj.prototype);
     keys = keys.filter((key: string) => typeof obj.prototype[key] === 'function' && !filterKey.includes(key));
     keys.forEach(e => {
@@ -54,16 +55,43 @@ export default class H5Bridge {
    * https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/js-apis-emitter-V5#emitteremit
    */
   emit(arg: EmitArg) {
-    console.log('emit --->', arg);
+    console.log('emit --->', JSON.stringify(arg));
     // emitter.on("eventId",  (data: emitter.GenericEventData<string>) => {});
     // emitter.once("eventId",  (data: emitter.GenericEventData<string>) => {});
-    //
     // emitter.off("eventId");
-
     // const eventData = emitter.EventData = { data: '123456' }
     // emitter.emit("eventId", { data: '123456' });
 
-    emitter.emit('web-page', {data: '123456789'})
+    emitter.emit('web-page', {data: arg})
+  }
+
+  /**
+   * 添加消息监听
+   * https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/js-apis-emitter-V5#emitteremit
+   */
+  listener(arg: EmitArg) {
+    console.log('listener --->', JSON.stringify(arg));
+    // emitter.on("eventId",  (data: emitter.GenericEventData<string>) => {});
+    // emitter.once("eventId",  (data: emitter.GenericEventData<string>) => {});
+    // emitter.off("eventId");
+    // const eventData = emitter.EventData = { data: '123456' }
+    // emitter.emit("eventId", { data: '123456' });
+    const onEvent = (data: emitter.GenericEventData<object>) => {
+      console.log('listener ------> ', data.data);
+    }
+    if(arg.once) {
+      emitter.once(arg.event, onEvent);
+    }else {
+      emitter.on(arg.event, onEvent);
+    }
+  }
+
+  /**
+   * 移除消息监听
+   */
+  remove(arg: EmitArg) {
+    console.log('remove --->', JSON.stringify(arg));
+    emitter.off(arg.event);
   }
 
   /**
@@ -86,7 +114,19 @@ export default class H5Bridge {
    * 设备信息
    */
   deviceInfo(): DeviceDto {
-    return {};
+    return {
+      width: 0,
+      height: 0,
+      top: 0,
+      bottom: 0
+    };
+  }
+
+  /**
+   *
+   */
+  Screen(): string{
+    return ''
   }
 
   /**
@@ -260,6 +300,11 @@ export default class H5Bridge {
    */
   toast(msg: string, duration: number, icon: string) {
     console.log('--------> toast');
+
+    promptAction.showToast({
+      message: msg,
+      duration: 2000
+    });
   }
 
   /**
@@ -341,5 +386,9 @@ export default class H5Bridge {
    */
   isDebug(): boolean {
     return false;
+  }
+
+  public destroy() {
+
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Author: user
+ * Author: Meng
  * Date: 2024/11/05
  * Modify: 2024/11/05
  * Desc: 数据类型
@@ -17,6 +17,11 @@ export interface Latlng {
 
 export interface DeviceDto {
   deviceName?: string;
+  width: number;
+  height: number;
+  top: number;
+  bottom: number;
+  // safeAreaTop: number;
 }
 
 export interface UserDto {
