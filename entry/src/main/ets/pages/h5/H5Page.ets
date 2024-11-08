@@ -47,13 +47,16 @@ struct WebPage {
     // const userAgent = this.controller.getUserAgent() + '-hmos';
     // this.controller.setCustomUserAgent(userAgent);
 
+    this.controller.clearHistory();
+    this.controller.clearSslCache();
+
     this.ports = this.controller.createWebMessagePorts();
 
     this.ports[1].onMessageEvent((result) => {
       console.log('-----> onMessageEvent' , result)
     });
 
-    this.controller.postMessage('__init_port__', [this.ports[0]], '*');
+    this.controller.postMessage('__hmos_port', [this.ports[0]], '*');
   }
 
   aboutToDisappear(): void {
