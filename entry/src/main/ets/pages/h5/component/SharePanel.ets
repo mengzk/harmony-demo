@@ -18,9 +18,13 @@ export default struct SharePanel {
   itemView() {
     Column(){
       Text('图片')
-      Text('名称')
+      Text('名称').fontColor(Color.Red)
     }
+    .height('100%')
     .layoutWeight(1)
+    .onClick(() => {
+      console.log('------>')
+    })
   }
 
   build() {
@@ -36,9 +40,9 @@ export default struct SharePanel {
           .margin({bottom: 48})
           .justifyContent(FlexAlign.SpaceBetween)
           Row({}){
-            this.itemView()
-            this.itemView()
-            this.itemView()
+            ForEach([1,2,3], (item:number) => {
+              this.itemView()
+            })
           }
           .width('100%')
           .justifyContent(FlexAlign.SpaceEvenly)
