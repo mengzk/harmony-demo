@@ -3,6 +3,7 @@ import { emitter } from '@kit.BasicServicesKit';
 
 import H5Bridge from './bridge/H5Bridge';
 import SharePanel from './component/SharePanel';
+import NavigationSheet from './component/NavigationSheet';
 
 /**
  * Author: Meng
@@ -101,7 +102,7 @@ struct WebPage {
         })
         .javaScriptProxy({
           object: this.jsBridge,
-          name: "bnqBridge",
+          name: "bnq",
           methodList: this.jsBridge.methodList,
           // asyncMethodList: ["asyncTest"],
           controller: this.controller,
@@ -128,6 +129,7 @@ struct WebPage {
       }
 
       SharePanel()
+      NavigationSheet()
     }
   }
 }

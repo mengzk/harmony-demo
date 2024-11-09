@@ -18,7 +18,7 @@ export interface CameraArg {
  *
  */
 export interface MediaArg {
-  type?: Array<number>;
+  type?: Array<number>; // 文件类型 1.照片；2.视频
   count?: number;
   upload?: boolean;
 }
@@ -77,7 +77,7 @@ export interface ShareArg {
   title?: string;
 }
 
-interface ShareItem {
+export interface ShareItem {
   mold: number; // 1链接；2图片；2小程序；3微信
   key?: string; // 原始id,
   appId?: string;
@@ -112,5 +112,6 @@ export interface NavArg {
   lat: number;
   lng: number;
   name: string;
+  address?: string;
 }
 

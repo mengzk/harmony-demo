@@ -279,7 +279,7 @@ export default class H5Bridge {
    * 分享
    */
   share(arg: ShareArg) {
-
+    emitter.emit('h5-share-panel', {data: arg})
   }
 
   /**
@@ -378,7 +378,7 @@ export default class H5Bridge {
    * 地图导航
    */
   mapNavigation(arg: NavArg) {
-
+    emitter.emit('h5-navigation-sheet', {data: arg})
   }
 
   /**
