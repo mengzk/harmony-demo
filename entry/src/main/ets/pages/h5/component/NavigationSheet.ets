@@ -16,7 +16,7 @@ export default struct NavigationSheet {
 
   aboutToAppear(): void {
     emitter.on("h5-navigation-sheet", (data: emitter.GenericEventData<NavArg>) => {
-      console.log('share --------> ', data);
+      console.log('navigation --------> ', data);
       const res = data.data;
       if(res) {
         this.address = res;

@@ -25,6 +25,7 @@ import {
   LocationArg,
   LinkArg,
   ShareArg,
+  ShareItem,
   PayArg,
   NavArg,
   RouteArg,
@@ -111,6 +112,13 @@ export default class H5Bridge {
   }
 
   /**
+   * 退出账号
+   */
+  logout() {
+
+  }
+
+  /**
    * 设备信息
    */
   deviceInfo(): DeviceDto {
@@ -125,7 +133,7 @@ export default class H5Bridge {
   /**
    *
    */
-  Screen(): string{
+  screen(): string{
     return ''
   }
 
@@ -283,6 +291,20 @@ export default class H5Bridge {
   }
 
   /**
+   * 微信分享
+   */
+  wechatShare(arg: ShareItem) {
+
+  }
+
+  /**
+   * 打开小程序
+   */
+  openApplet() {
+
+  }
+
+  /**
    * 收银台
    */
   cashier(arg: PayArg): Promise<string> {
@@ -290,6 +312,13 @@ export default class H5Bridge {
 
       resolve('');
     });
+  }
+
+  /**
+   * 直播
+   */
+  liveVideo(id: string) {
+
   }
 
   /**

@@ -4,3 +4,7 @@
  * Modify: 2024/11/09
  * Desc:
  */
+
+export function getFileSize() {
+
+}

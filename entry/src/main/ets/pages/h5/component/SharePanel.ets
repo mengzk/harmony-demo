@@ -2,7 +2,7 @@
  * Author: Meng
  * Date: 2024/11/08
  * Modify: 2024/11/08
- * Desc:
+ * Desc: 分享面板
  */
 
 import { emitter } from "@kit.BasicServicesKit";
