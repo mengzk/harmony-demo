@@ -52,6 +52,13 @@ export default class H5Bridge {
   }
 
   /**
+   * ❗️调用方法
+   */
+  invoke(name: string, data: object) {
+
+  }
+
+  /**
    * 发送消息
    * https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/js-apis-emitter-V5#emitteremit
    */
@@ -63,7 +70,9 @@ export default class H5Bridge {
     // const eventData = emitter.EventData = { data: '123456' }
     // emitter.emit("eventId", { data: '123456' });
 
-    emitter.emit('web-page', {data: arg})
+    emitter.emit('web-page', {
+      data: arg
+    })
   }
 
   /**
@@ -80,9 +89,9 @@ export default class H5Bridge {
     const onEvent = (data: emitter.GenericEventData<object>) => {
       console.log('listener ------> ', data.data);
     }
-    if(arg.once) {
+    if (arg.once) {
       emitter.once(arg.event, onEvent);
-    }else {
+    } else {
       emitter.on(arg.event, onEvent);
     }
   }
@@ -103,6 +112,13 @@ export default class H5Bridge {
   }
 
   /**
+   * 退出账号
+   */
+  logout() {
+
+  }
+
+  /**
    * 登录账号
    */
   login(tag: string): Promise<UserDto> {
@@ -111,12 +127,6 @@ export default class H5Bridge {
     });
   }
 
-  /**
-   * 退出账号
-   */
-  logout() {
-
-  }
 
   /**
    * 设备信息
@@ -131,10 +141,10 @@ export default class H5Bridge {
   }
 
   /**
-   *
+   * 获取应用信息
    */
-  screen(): string{
-    return ''
+  screenInfo() {
+
   }
 
   /**
@@ -250,7 +260,7 @@ export default class H5Bridge {
   /**
    * 发送短信
    */
-  sendShortMsg(phone: string, msg: string) {
+  sendSms(phone: string, msg: string) {
 
   }
 
@@ -287,7 +297,9 @@ export default class H5Bridge {
    * 分享
    */
   share(arg: ShareArg) {
-    emitter.emit('h5-share-panel', {data: arg})
+    emitter.emit('h5-share-panel', {
+      data: arg
+    })
   }
 
   /**
@@ -367,7 +379,7 @@ export default class H5Bridge {
   /**
    * 页面配置
    */
-  pageConfig(arg: PageArg) {
+  headerConfig(arg: PageArg) {
 
   }
 
@@ -407,7 +419,9 @@ export default class H5Bridge {
    * 地图导航
    */
   mapNavigation(arg: NavArg) {
-    emitter.emit('h5-navigation-sheet', {data: arg})
+    emitter.emit('h5-navigation-sheet', {
+      data: arg
+    })
   }
 
   /**

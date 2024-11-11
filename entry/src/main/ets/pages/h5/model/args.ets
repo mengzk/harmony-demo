@@ -13,6 +13,7 @@ export interface CameraArg {
   text?: string;
   mode?: number; // 0前置；1后置
   type?: number; // 0照片；1视频
+  data?: Map<string, string>;
 }
 
 /**
