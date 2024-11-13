@@ -17,12 +17,12 @@ export default struct H5Header {
     emitter.on("h5-page-title", (data: emitter.GenericEventData<PageArg>) => {
       console.log('page --------> ', data);
       const res = data.data;
-      if(res) {
-        if(res.title) {
+      if (res) {
+        if (res.title) {
           this.title = res.title;
         }
         this.visible = true;
-      }else {
+      } else {
         console.warn('share --------> 参数不正确');
       }
     });
@@ -33,12 +33,22 @@ export default struct H5Header {
   }
 
   build() {
-    if(this.visible) {
-      Row(){
+    if (this.visible) {
+      Row() {
         Text("返回")
-        Text("标题")
+          .fontColor(Color.Gray)
+          .padding({ left: 16, right: 16 })
+        Text("测试鸿蒙")
+          .fontSize(18)
+          .fontWeight(700)
         Text("菜单")
+          .padding({ left: 16, right: 16 })
       }
+      .width('100%')
+      .height(46)
+      .alignItems(VerticalAlign.Center)
+      .justifyContent(FlexAlign.SpaceBetween)
+      .backgroundColor(Color.White)
     }
   }
 }

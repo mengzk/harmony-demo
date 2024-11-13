@@ -339,12 +339,11 @@ export default class H5Bridge {
    * @param duration
    * @param icon
    */
-  toast(msg: string, duration: number, icon: string) {
+  toast(msg: string, duration: number) {
     console.log('--------> toast');
-
     promptAction.showToast({
       message: msg,
-      duration: 2000
+      duration: duration || 2000
     });
   }
 
@@ -358,21 +357,21 @@ export default class H5Bridge {
   /**
    * 隐藏加载框
    */
-  hintLoading() {
+  hideLoading() {
 
   }
 
   /**
    * 录音
    */
-  audioRecord(args: AudioArg) {
+  record(args: AudioArg) {
 
   }
 
   /**
    * 媒体播放
    */
-  audioPlay(args: PlayArg) {
+  mediaPlayer(args: PlayArg) {
 
   }
 
