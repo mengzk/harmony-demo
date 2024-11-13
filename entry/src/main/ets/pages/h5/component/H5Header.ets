@@ -36,13 +36,27 @@ export default struct H5Header {
     if (this.visible) {
       Row() {
         Text("返回")
+          .width('20%')
           .fontColor(Color.Gray)
           .padding({ left: 16, right: 16 })
-        Text("测试鸿蒙")
+        Text("这是一个很长很长很长的标题显示")
           .fontSize(18)
           .fontWeight(700)
-        Text("菜单")
-          .padding({ left: 16, right: 16 })
+          .width('60%')
+          .maxLines(1)
+          .textAlign(TextAlign.Center)
+          .ellipsisMode(EllipsisMode.END)
+        Row(){
+          Text("分享")
+            .fontSize(14)
+            .padding({left: 4, right: 4})
+          Text("确认")
+            .fontSize(14)
+            .padding({left: 4, right: 4})
+        }
+        .width('20%')
+        .padding({right: 12})
+        .justifyContent(FlexAlign.End)
       }
       .width('100%')
       .height(46)
