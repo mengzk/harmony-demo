@@ -91,15 +91,19 @@ export interface ShareItem {
 }
 
 export interface PageArg {
+  theme?: string;
   title?: string;
-  header?: boolean;
-  bg?: Color;
+  hide?: boolean;
+  bg?: string|Color;
   actions?: Array<ActionItem>;
 }
 
-interface ActionItem {
+export interface ActionItem {
   text?: string;
   icon?: string;
+  key?: string;
+  fontWeight?: number;
+  color?: string|Color;
 }
 
 export interface RouteArg {

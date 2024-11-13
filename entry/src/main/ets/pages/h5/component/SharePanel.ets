@@ -15,13 +15,13 @@ export default struct SharePanel {
 
   aboutToAppear(): void {
     emitter.on("h5-share-panel", (data: emitter.GenericEventData<ShareArg>) => {
-      console.log('share --------> ', data);
+      // console.log('share --------> ', data);
       const res = data.data;
       if(res && res.data && res.data.length > 0) {
         this.list = res.data;
         this.visible = true;
       }else {
-        console.warn('share --------> 参数不正确或缺少分享类型');
+        console.warn('share ---> 参数不正确或缺少分享类型');
       }
     });
   }

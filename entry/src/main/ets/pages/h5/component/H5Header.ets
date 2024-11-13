@@ -5,25 +5,31 @@
  * Desc: 标题栏
  */
 import { emitter } from "@kit.BasicServicesKit";
-import { PageArg } from "../model/args";
+import { ActionItem, PageArg } from "../model/args";
 
 @Component
 export default struct H5Header {
-  @State title: string = '';
-  @State actions: string = '';
+  @State title: string = '住小橙';
+  @State actions: ActionItem[] = [
+    { text: '提交', key: 'commit' ,color: Color.Red },
+    { text: '菜单', key: 'menu' ,color: Color.Orange},
+  ];
   @State visible: boolean = true;
 
   aboutToAppear(): void {
     emitter.on("h5-page-title", (data: emitter.GenericEventData<PageArg>) => {
-      console.log('page --------> ', data);
+      // console.log('page --------> ', data);
       const res = data.data;
       if (res) {
         if (res.title) {
           this.title = res.title;
         }
-        this.visible = true;
+        if(res.actions) {
+          this.actions = res.actions
+        }
+        this.visible = !res.hide;
       } else {
-        console.warn('share --------> 参数不正确');
+        console.warn('header config ---> 参数空');
       }
     });
   }
@@ -32,30 +38,35 @@ export default struct H5Header {
     emitter.off('h5-page-title');
   }
 
+  @Builder
+  menuView(item: ActionItem, index: number) {
+    if (item.text) {
+      Text(item.text)
+        .fontColor(item.color||Color.Black)
+        .fontSize(14)
+        .padding({left: index*8, top: 6, bottom: 6})
+    }
+  }
+
   build() {
     if (this.visible) {
       Row() {
         Text("返回")
-          .width('20%')
+          .width('22%')
           .fontColor(Color.Gray)
           .padding({ left: 16, right: 16 })
-        Text("这是一个很长很长很长的标题显示")
+        Text(this.title)
           .fontSize(18)
           .fontWeight(700)
-          .width('60%')
+          .width('56%')
           .maxLines(1)
           .textAlign(TextAlign.Center)
           .ellipsisMode(EllipsisMode.END)
-        Row(){
-          Text("分享")
-            .fontSize(14)
-            .padding({left: 4, right: 4})
-          Text("确认")
-            .fontSize(14)
-            .padding({left: 4, right: 4})
+        Row() {
+          ForEach(this.actions, (e: ActionItem, id: number) => this.menuView(e, id))
         }
-        .width('20%')
-        .padding({right: 12})
+        .width('22%')
+        .padding({right: 16})
         .justifyContent(FlexAlign.End)
       }
       .width('100%')

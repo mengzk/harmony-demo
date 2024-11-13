@@ -16,13 +16,13 @@ export default struct NavigationSheet {
 
   aboutToAppear(): void {
     emitter.on("h5-navigation-sheet", (data: emitter.GenericEventData<NavArg>) => {
-      console.log('navigation --------> ', data);
+      // console.log('navigation --------> ', data);
       const res = data.data;
       if(res) {
         this.address = res;
         this.visible = true;
       }else {
-        console.warn('share --------> 地址参数不正确');
+        console.warn('navigation ---> 导航参数不正确');
       }
     });
   }
