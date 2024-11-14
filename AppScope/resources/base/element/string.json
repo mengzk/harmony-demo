@@ -3,6 +3,14 @@
     {
       "name": "app_name",
       "value": "Test01"
+    },
+    {
+      "name": "perm_address",
+      "value": "获取当前位置"
+    },
+    {
+      "name": "perm_camera",
+      "value": "用于拍摄照片"
     }
   ]
 }
