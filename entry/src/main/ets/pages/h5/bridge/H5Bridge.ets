@@ -405,11 +405,13 @@ export default class H5Bridge {
   chooseAddress(): Promise<Latlng> {
     return new Promise((resolve) => {
       let locationChoosingOptions: sceneMap.LocationChoosingOptions = {
-        // location: {
-        //   latitude: 39.92194051376904, longitude: 116.3971836796932
-        // },
+        location: {
+          latitude: 39.92194051376904, longitude: 116.3971836796932
+        },
         // language: 'zh_CN',
+        // 展示搜索控件
         searchEnabled: true,
+        // 展示附近Poi
         showNearbyPoi: true
       };
       sceneMap.chooseLocation(getContext(this) as common.UIAbilityContext, locationChoosingOptions)
@@ -535,14 +537,18 @@ export default class H5Bridge {
    * 显示加载框
    */
   showLoading(text: string) {
-
+    promptAction.showToast({
+      message: '功能暂不支持'
+    });
   }
 
   /**
    * 隐藏加载框
    */
   hideLoading() {
-
+    promptAction.showToast({
+      message: '功能暂不支持'
+    });
   }
 
   /**

@@ -4,6 +4,12 @@
     "type": "entry",
     "description": "$string:module_desc",
     "mainElement": "EntryAbility",
+    "metadata": [
+      {
+        "name": "siteMapId",
+        "value": "9222071540685574"
+      }
+    ],
     "deviceTypes": [
       "phone",
       "tablet",
@@ -56,14 +62,40 @@
         "name": "ohos.permission.LOCATION",
         "reason": "$string:perm_address",
         "usedScene": {
-          "when": "inuse"
+          "abilities": [
+            "FormAbility"
+          ],
+          "when":"always"
+        }
+      },
+      {
+        "name": "ohos.permission.APPROXIMATELY_LOCATION",
+        "reason": "$string:perm_address",
+        "usedScene": {
+          "abilities": [
+            "FormAbility"
+          ],
+          "when":"always"
+        }
+      },
+      {
+        "name": "ohos.permission.LOCATION_IN_BACKGROUND",
+        "reason": "$string:perm_address",
+        "usedScene": {
+          "abilities": [
+            "FormAbility"
+          ],
+          "when":"always"
         }
       },
       {
         "name": "ohos.permission.CAMERA",
         "reason": "$string:perm_camera",
         "usedScene": {
-          "when": "inuse"
+          "abilities": [
+            "FormAbility"
+          ],
+          "when":"always"
         }
       }
     ]
