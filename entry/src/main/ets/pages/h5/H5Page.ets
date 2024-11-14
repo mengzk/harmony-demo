@@ -69,6 +69,20 @@ struct WebPage {
     });
 
     this.controller.postMessage('__hmos_port', [this.ports[0]], '*');
+
+    // window.addEventListener("message", (e) => {
+    //   console.log("message----->", e);
+    //   if (e != null && e.data === "__hmos_port" && e.ports != null) {
+    //     h5Port = e.ports[0]; // 1. 保存从应用侧发送过来的端口。
+    //     if (h5Port != null) {
+    //       h5Port.onmessage = (event) => {
+    //         // 2. 接收ets侧发送过来的消息。
+    //         const result = event.data;
+    //         console.log("h5Port----->", result);
+    //       };
+    //     }
+    //   }
+    // });
   }
 
   gitParams() {
