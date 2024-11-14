@@ -32,7 +32,7 @@ struct WebPage {
     // asyncMethodList: ["asyncTest"],
   };
 
-  @State url: string = 'http://192.168.253.155:8091';
+  @State url: string = 'http://192.168.253.109:8091';
   @State progress: number = 0;
 
   aboutToAppear(): void {

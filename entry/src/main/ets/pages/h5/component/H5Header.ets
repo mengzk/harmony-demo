@@ -4,6 +4,7 @@
  * Modify: 2024/11/11
  * Desc: 标题栏
  */
+import { router } from '@kit.ArkUI';
 import { emitter } from "@kit.BasicServicesKit";
 import { ActionItem, PageArg } from "../model/args";
 
@@ -11,23 +12,23 @@ import { ActionItem, PageArg } from "../model/args";
 export default struct H5Header {
   @State title: string = '住小橙';
   @State actions: ActionItem[] = [
-    { text: '提交', key: 'commit' ,color: Color.Red },
-    { text: '菜单', key: 'menu' ,color: Color.Orange},
+    { text: '提交', key: 'commit', color: Color.Red },
+    { text: '菜单', key: 'menu', color: Color.Orange },
   ];
   @State visible: boolean = true;
 
   aboutToAppear(): void {
     emitter.on("h5-page-title", (data: emitter.GenericEventData<PageArg>) => {
-      // console.log('page --------> ', data);
       const res = data.data;
+      console.log('page --------> ', JSON.stringify(res));
       if (res) {
         if (res.title) {
           this.title = res.title;
         }
-        if(res.actions) {
-          this.actions = res.actions
+        if (res.actions) {
+          this.actions = res.actions;
         }
-        this.visible = !res.hide;
+        this.visible = !(res.hide||false);
       } else {
         console.warn('header config ---> 参数空');
       }
@@ -42,9 +43,9 @@ export default struct H5Header {
   menuView(item: ActionItem, index: number) {
     if (item.text) {
       Text(item.text)
-        .fontColor(item.color||Color.Black)
+        .fontColor(item.color || Color.Black)
         .fontSize(14)
-        .padding({left: index*8, top: 6, bottom: 6})
+        .padding({ left: index * 8, top: 6, bottom: 6 })
     }
   }
 
@@ -55,6 +56,9 @@ export default struct H5Header {
           .width('22%')
           .fontColor(Color.Gray)
           .padding({ left: 16, right: 16 })
+          .onClick(() => {
+            router.back();
+          })
         Text(this.title)
           .fontSize(18)
           .fontWeight(700)
@@ -66,7 +70,7 @@ export default struct H5Header {
           ForEach(this.actions, (e: ActionItem, id: number) => this.menuView(e, id))
         }
         .width('22%')
-        .padding({right: 16})
+        .padding({ right: 16 })
         .justifyContent(FlexAlign.End)
       }
       .width('100%')

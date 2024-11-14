@@ -9,8 +9,12 @@ import File from "@system.file";
 
 
 export interface Latlng {
+  code?: number;
   lat: number;
   lng: number;
+  speed?: number; // 速度 m/s
+  altitude?: number; // 高度
+  accuracy?: number; // 精度 单位米
   address?: string;
   name?: string;
 }

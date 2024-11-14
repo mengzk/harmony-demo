@@ -11,8 +11,8 @@
 export interface CameraArg {
   watermark?: boolean;
   text?: string;
-  mode?: number; // 0前置；1后置
-  type?: number; // 0照片；1视频
+  mode?: number; // 0照片；1视频; 2视频或图片
+  position?: number; // 1后置,2前置
   data?: Map<string, string>;
 }
 
@@ -31,6 +31,7 @@ export interface MediaArg {
 export interface PhotoArg {
   count?: number;
   upload?: boolean;
+  mode?: number; // 0图片；1视频；2视频和图片
 }
 
 /**
