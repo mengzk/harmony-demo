@@ -5,9 +5,6 @@
  * Desc: 数据类型
  */
 
-import File from "@system.file";
-
-
 export interface Latlng {
   code?: number;
   lat: number;
@@ -25,9 +22,13 @@ export interface DeviceDto {
   height: number;
   top: number;
   bottom: number;
+  screen?: object;
   // safeAreaTop: number;
 }
-
+export interface AppDto {
+  version: string;
+  env?: string;
+}
 export interface UserDto {
   oneId?: string;
   userId?: string;
@@ -38,6 +39,20 @@ export interface UserDto {
 }
 
 export interface MediaDto {
-  data?: Array<string | File>;
+  data?: Array<string | FileDto>;
   code?: number;
+}
+
+export interface FileDto {
+  url?: string;
+  path?: string;
+  name?: string;
+  suffix?: string; // 文件后缀
+}
+
+export interface UploadDto {
+  code: number;
+  msg: string;
+  data?: string;
+  list?: Array<string>;
 }

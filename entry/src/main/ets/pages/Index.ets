@@ -3,7 +3,7 @@ import { router } from '@kit.ArkUI';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { abilityAccessCtrl, common, Permissions } from '@kit.AbilityKit';
 
-const permissions: Array<Permissions> = ['ohos.permission.LOCATION', 'ohos.permission.APPROXIMATELY_LOCATION'];
+const permissions: Array<Permissions> = ['ohos.permission.LOCATION', 'ohos.permission.APPROXIMATELY_LOCATION', 'ohos.permission.READ_MEDIA', 'ohos.permission.WRITE_MEDIA', 'ohos.permission.MEDIA_LOCATION'];
 
 function reqPermissions(permissions: Array<Permissions>, context: common.UIAbilityContext): void {
   let atManager: abilityAccessCtrl.AtManager = abilityAccessCtrl.createAtManager();
@@ -36,7 +36,7 @@ function reqPermissions(permissions: Array<Permissions>, context: common.UIAbili
 @Entry
 @Component
 struct Index {
-  @State message: string = 'Hello World';
+  @State message: string = '点击调试H5';
 
 
   aboutToAppear(): void {
@@ -44,7 +44,7 @@ struct Index {
     reqPermissions(permissions, context);
     setTimeout(() => {
       console.log("--------> aboutToAppear")
-      // this.gotoH5();
+      this.gotoH5();
     }, 1000)
   }
 
@@ -79,5 +79,6 @@ struct Index {
     }
     .height('100%')
     .width('100%')
+    .padding(16)
   }
 }

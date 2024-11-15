@@ -19,7 +19,9 @@ import { filePreview } from '@kit.PreviewKit';
 import { systemShare } from '@kit.ShareKit';
 import { uniformTypeDescriptor as utd } from '@kit.ArkData';
 
-import { Latlng, DeviceDto, UserDto, MediaDto, } from '../model/dtos';
+import { copyFileToCache } from '../utils/File';
+import { uploads } from '../utils/axios';
+import { Latlng, DeviceDto, UserDto, MediaDto, FileDto, AppDto, UploadDto } from '../model/dtos';
 import {
   EmitArg,
   CameraArg,
@@ -150,31 +152,32 @@ export default class H5Bridge {
   /**
    * 获取应用信息
    */
-  screenInfo() {
-
+  appInfo(): AppDto {
+    return {
+      version: '0.0.1'
+    }
   }
 
   /**
    * 打开摄像头 拍照/录像
    */
-  openCamera(arg: CameraArg): Promise<string> {
-    console.log('taskPhoto ---> Args', arg);
+  openCamera(arg: CameraArg): Promise<UploadDto> {
     let context = getContext(this) as common.Context;
-
-    let cameraPosition = camera.CameraPosition.CAMERA_POSITION_BACK;
-    let mediaType = [cameraPicker.PickerMediaType.PHOTO];
-
-    if (arg.position == 2) {
-      cameraPosition = camera.CameraPosition.CAMERA_POSITION_FRONT;
-    }
-
-    if (arg.mode == 1) {
-      mediaType = [cameraPicker.PickerMediaType.VIDEO];
-    } else if (arg.mode == 2) {
-      mediaType = [cameraPicker.PickerMediaType.PHOTO, cameraPicker.PickerMediaType.VIDEO];
-    }
-
     return new Promise(async (resolve) => {
+
+      let cameraPosition = camera.CameraPosition.CAMERA_POSITION_BACK;
+      let mediaType = [cameraPicker.PickerMediaType.PHOTO];
+
+      if (arg.position == 2) {
+        cameraPosition = camera.CameraPosition.CAMERA_POSITION_FRONT;
+      }
+
+      if (arg.mode == 1) {
+        mediaType = [cameraPicker.PickerMediaType.VIDEO];
+      } else if (arg.mode == 2) {
+        mediaType = [cameraPicker.PickerMediaType.PHOTO, cameraPicker.PickerMediaType.VIDEO];
+      }
+
       try {
         let pickerProfile: cameraPicker.PickerProfile = {
           cameraPosition
@@ -186,11 +189,11 @@ export default class H5Bridge {
           })
           .catch((err: BusinessError) => {
             console.log(`openCamera catch: ${err.code}, ${err.message}`);
-            resolve('');
+            resolve({ code: -100, msg: '相机打开失败' });
           })
       } catch (error) {
         console.error(`openCamera error code: ${error.code}`);
-        resolve('');
+        resolve({ code: -120, msg: '相机创建失败' });
       }
     });
   }
@@ -198,7 +201,8 @@ export default class H5Bridge {
   /**
    * 选择照片
    */
-  choosePhoto(arg: PhotoArg): Promise<MediaDto> {
+  chooseAlbum(arg: PhotoArg): Promise<MediaDto> {
+    // console.log('-----> ', JSON.stringify(arg))
     const photoSelectArgs = new photoAccessHelper.PhotoSelectOptions();
     photoSelectArgs.maxSelectNumber = arg.count || 9; // 选择媒体文件的最大数目
     photoSelectArgs.MIMEType = photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE; // 过滤选择媒体文件类型为IMAGE
@@ -212,13 +216,16 @@ export default class H5Bridge {
     const photoViewPicker = new photoAccessHelper.PhotoViewPicker();
 
     return new Promise(resolve => {
-      photoViewPicker.select(photoSelectArgs).then((result: photoAccessHelper.PhotoSelectResult) => {
-        uris = result.photoUris;
-        console.info('choosePhoto succeed:' + uris);
-        resolve({
-          data: uris, code: 0
-        });
-      }).catch((err: BusinessError) => {
+      photoViewPicker.select(photoSelectArgs)
+        .then((result: photoAccessHelper.PhotoSelectResult) => {
+          uris = result.photoUris;
+          console.info('choosePhoto succeed:' + uris);
+          uploads(uris.map(e => copyFileToCache(e))).then((uRes) => {
+            resolve({
+              data: uRes.list, code: 0
+            });
+          });
+        }).catch((err: BusinessError) => {
         console.error(`choosePhoto failed, code is ${err.code}, message is ${err.message}`);
         resolve({
           data: [], code: -1
@@ -248,6 +255,10 @@ export default class H5Bridge {
         console.error('AudioViewPicker catch: ' + JSON.stringify(error));
       }
     });
+  }
+
+  uploadFile(files: Array<string>): Promise<UploadDto> {
+    return uploads(files.map(e => copyFileToCache(e)));
   }
 
   /**
@@ -296,21 +307,23 @@ export default class H5Bridge {
   /**
    * 打开文件夹
    */
-  openFolder(arg: FolderArg) {
-    try {
-      let context = getContext(this) as Context;
-      let documentSelectOptions = new filePicker.DocumentSelectOptions();
-      let documentPicker = new filePicker.DocumentViewPicker(context);
-      documentPicker.select(documentSelectOptions, (err: BusinessError, documentSelectResult: Array<string>) => {
-        if (err) {
-          console.error('openFolder failed: ' + JSON.stringify(err));
-          return;
-        }
-        console.info('openFolder success: ' + JSON.stringify(documentSelectResult));
-      });
-    } catch (error) {
-      console.error('openFolder catch: ' + JSON.stringify(error));
-    }
+  openFolder(arg: FolderArg): Promise<FileDto> {
+    return new Promise((resolve) => {
+      try {
+        let context = getContext(this) as Context;
+        let documentSelectOptions = new filePicker.DocumentSelectOptions();
+        let documentPicker = new filePicker.DocumentViewPicker(context);
+        documentPicker.select(documentSelectOptions, (err: BusinessError, documentSelectResult: Array<string>) => {
+          if (err) {
+            console.error('openFolder failed: ' + JSON.stringify(err));
+            return;
+          }
+          console.info('openFolder success: ' + JSON.stringify(documentSelectResult));
+        });
+      } catch (error) {
+        console.error('openFolder catch: ' + JSON.stringify(error));
+      }
+    });
   }
 
   /**
