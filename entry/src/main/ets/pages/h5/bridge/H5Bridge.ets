@@ -20,7 +20,7 @@ import { systemShare } from '@kit.ShareKit';
 import { uniformTypeDescriptor as utd } from '@kit.ArkData';
 
 import { copyFileToCache } from '../utils/File';
-import { uploads } from '../utils/axios';
+import { uploads, upload } from '../utils/axios';
 import { Latlng, DeviceDto, UserDto, MediaDto, FileDto, AppDto, UploadDto } from '../model/dtos';
 import {
   EmitArg,
@@ -185,7 +185,11 @@ export default class H5Bridge {
         cameraPicker.pick(context, mediaType, pickerProfile)
           .then((result: cameraPicker.PickerResult) => {
             console.log('openCamera result', JSON.stringify(result));
-
+            if(result.resultUri) {
+              upload(copyFileToCache(result.resultUri)).then((res) => {
+                resolve(res);
+              })
+            }
           })
           .catch((err: BusinessError) => {
             console.log(`openCamera catch: ${err.code}, ${err.message}`);
@@ -201,7 +205,7 @@ export default class H5Bridge {
   /**
    * 选择照片
    */
-  chooseAlbum(arg: PhotoArg): Promise<MediaDto> {
+  chooseAlbum(arg: PhotoArg): Promise<UploadDto> {
     // console.log('-----> ', JSON.stringify(arg))
     const photoSelectArgs = new photoAccessHelper.PhotoSelectOptions();
     photoSelectArgs.maxSelectNumber = arg.count || 9; // 选择媒体文件的最大数目
@@ -221,14 +225,12 @@ export default class H5Bridge {
           uris = result.photoUris;
           console.info('choosePhoto succeed:' + uris);
           uploads(uris.map(e => copyFileToCache(e))).then((uRes) => {
-            resolve({
-              data: uRes.list, code: 0
-            });
+            resolve(uRes);
           });
         }).catch((err: BusinessError) => {
         console.error(`choosePhoto failed, code is ${err.code}, message is ${err.message}`);
         resolve({
-          data: [], code: -1
+          msg: 'catch', code: -1
         });
       })
     });
@@ -312,23 +314,26 @@ export default class H5Bridge {
       try {
         let context = getContext(this) as Context;
         let docSelectOptions = new filePicker.DocumentSelectOptions();
+        docSelectOptions.maxSelectNumber = 9;
+        docSelectOptions.fileSuffixFilters = ['docx', 'ptx', 'xlsx', 'pdf'];
         let documentPicker = new filePicker.DocumentViewPicker(context);
         documentPicker.select(docSelectOptions, (err: BusinessError, docRes: Array<string>) => {
           console.info('openFolder: ' + JSON.stringify(docRes));
           if (err) {
             console.error('openFolder failed: ' + JSON.stringify(err));
+            resolve({
+              msg: 'catch', code: 210
+            });
           }else {
             uploads(docRes.map(e => copyFileToCache(e))).then((uRes) => {
-              resolve({
-                list: uRes.list, code: 0, msg: 'ok'
-              });
+              resolve(uRes);
             });
           }
         });
       } catch (error) {
         console.error('openFolder catch: ' + JSON.stringify(error));
         resolve({
-          msg: 'catch', code: 0
+          msg: 'catch', code: 220
         });
       }
     });
