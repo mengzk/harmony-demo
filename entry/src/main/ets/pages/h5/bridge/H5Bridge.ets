@@ -307,21 +307,29 @@ export default class H5Bridge {
   /**
    * 打开文件夹
    */
-  openFolder(arg: FolderArg): Promise<FileDto> {
+  openFolder(arg: FolderArg): Promise<UploadDto> {
     return new Promise((resolve) => {
       try {
         let context = getContext(this) as Context;
-        let documentSelectOptions = new filePicker.DocumentSelectOptions();
+        let docSelectOptions = new filePicker.DocumentSelectOptions();
         let documentPicker = new filePicker.DocumentViewPicker(context);
-        documentPicker.select(documentSelectOptions, (err: BusinessError, documentSelectResult: Array<string>) => {
+        documentPicker.select(docSelectOptions, (err: BusinessError, docRes: Array<string>) => {
+          console.info('openFolder: ' + JSON.stringify(docRes));
           if (err) {
             console.error('openFolder failed: ' + JSON.stringify(err));
-            return;
+          }else {
+            uploads(docRes.map(e => copyFileToCache(e))).then((uRes) => {
+              resolve({
+                list: uRes.list, code: 0, msg: 'ok'
+              });
+            });
           }
-          console.info('openFolder success: ' + JSON.stringify(documentSelectResult));
         });
       } catch (error) {
         console.error('openFolder catch: ' + JSON.stringify(error));
+        resolve({
+          msg: 'catch', code: 0
+        });
       }
     });
   }
