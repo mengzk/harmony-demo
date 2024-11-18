@@ -47,7 +47,7 @@ export default struct H5Header {
         .fontColor(item.color || Color.Black)
         .padding({ left: index * 8, top: 6, bottom: 6 })
         .onClick(() => {
-          emitter.emit('h5-title-menu', {
+          emitter.emit('h5-page', {
             data: {key: item.key, tag: item.tag}
           })
         })

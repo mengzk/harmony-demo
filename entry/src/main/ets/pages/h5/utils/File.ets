@@ -7,7 +7,12 @@
 import { fileIo as fs } from '@kit.CoreFileKit';
 
 export function copyFileToCache(path: string): string {
-  const name = path.substring(path.lastIndexOf('/'));
+  let name = path.substring(path.lastIndexOf('/'));
+  try {
+    name = decodeURIComponent(name);
+  } catch (err) {
+    console.warn('------> copyFileToCache', JSON.stringify(err))
+  }
   const fileDir = `${getContext().cacheDir}${name}`;
 
   let file = fs.openSync(path, fs.OpenMode.READ_ONLY);

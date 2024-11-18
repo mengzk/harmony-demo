@@ -269,10 +269,6 @@ export default class H5Bridge {
     });
   }
 
-  uploadFile(files: Array<string>): Promise<UploadDto> {
-    return uploads(files.map(e => copyFileToCache(e)));
-  }
-
   /**
    * 预览图片
    */
@@ -615,12 +611,91 @@ export default class H5Bridge {
   }
 
   /**
+   * 检查权限
+   */
+  checkPermission(permissions: string[]) {
+
+  }
+
+  /**
+   * 获取权限
+   */
+  requestPermission(permissions: string[]) {
+
+  }
+
+  /**
+   * 获取网络状态
+   */
+  networkStatus() {
+
+  }
+
+  /**
+   * 上传文件
+   */
+  uploadFiles(files: Array<string>): Promise<UploadDto> {
+    return uploads(files.map(e => copyFileToCache(e)));
+  }
+
+  /**
+   * 删除文件
+   */
+  deleteFiles(url: string) {
+
+  }
+
+  /**
+   * 保存文件
+   */
+  saveFile(url: string, name?: string, path?: string) {
+
+  }
+
+  /**
+   * 读取文件
+   */
+  readFile(url: string, path?: string) {
+
+  }
+
+  /**
+   * 保存数据
+   */
+  saveItem(key: string, data: object) {
+
+  }
+
+  /**
+   * 获取数据
+   */
+  getItem(key: string) {
+
+  }
+
+  /**
+   * 删除数据
+   */
+  removeItem(key: string) {
+
+  }
+
+  /**
    * 清除缓存
    */
   clearCache() {
     promptAction.showToast({
       message: '清除缓存已清除'
     });
+  }
+
+  /**
+   * 地图导航
+   */
+  mapNavigation(arg: NavArg) {
+    emitter.emit('h5-navigation-sheet', {
+      data: arg
+    })
   }
 
   /**
@@ -673,15 +748,6 @@ export default class H5Bridge {
         message: '缺少路由路径'
       });
     }
-  }
-
-  /**
-   * 地图导航
-   */
-  mapNavigation(arg: NavArg) {
-    emitter.emit('h5-navigation-sheet', {
-      data: arg
-    })
   }
 
   /**

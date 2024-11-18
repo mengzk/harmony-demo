@@ -80,8 +80,7 @@ struct WebPage {
     emitter.on('h5-page', (data: emitter.GenericEventData<EmitDto>) => {
       console.log('-------> pageEmitHandler', data.data)
       try {
-        const msg = JSON.stringify(data);
-        this.ports[1].postMessageEvent(msg);
+        this.ports[1].postMessageEvent(JSON.stringify(data.data||{}));
       } catch (e) {
         console.log('------> catch', e.code, e.message)
       }
