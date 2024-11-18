@@ -44,6 +44,7 @@ import {
 
 export default class H5Bridge {
   methodList: Array<string> = [];
+  emitList: Array<string> = [];
 
   constructor() {
     this.getMethods(H5Bridge);
@@ -79,9 +80,9 @@ export default class H5Bridge {
     // const eventData = emitter.EventData = { data: '123456' }
     // emitter.emit("eventId", { data: '123456' });
 
-    emitter.emit('web-page', {
-      data: arg
-    })
+    emitter.emit(arg.event, {
+      data: arg.data
+    });
   }
 
   /**
@@ -97,7 +98,11 @@ export default class H5Bridge {
     // emitter.emit("eventId", { data: '123456' });
     const onEvent = (data: emitter.GenericEventData<object>) => {
       console.log('listener ------> ', data.data);
+      emitter.emit('h5-page', {
+        data: data.data
+      });
     }
+    this.emitList.push(arg.event);
     if (arg.once) {
       emitter.once(arg.event, onEvent);
     } else {
@@ -111,6 +116,7 @@ export default class H5Bridge {
   remove(arg: EmitArg) {
     console.log('remove --->', JSON.stringify(arg));
     emitter.off(arg.event);
+    this.emitList = this.emitList.filter(key => key != arg.event);
   }
 
   /**
@@ -185,7 +191,7 @@ export default class H5Bridge {
         cameraPicker.pick(context, mediaType, pickerProfile)
           .then((result: cameraPicker.PickerResult) => {
             console.log('openCamera result', JSON.stringify(result));
-            if(result.resultUri) {
+            if (result.resultUri) {
               upload(copyFileToCache(result.resultUri)).then((res) => {
                 resolve(res);
               })
@@ -193,11 +199,15 @@ export default class H5Bridge {
           })
           .catch((err: BusinessError) => {
             console.log(`openCamera catch: ${err.code}, ${err.message}`);
-            resolve({ code: -100, msg: '相机打开失败' });
+            resolve({
+              code: -100, msg: '相机打开失败'
+            });
           })
       } catch (error) {
         console.error(`openCamera error code: ${error.code}`);
-        resolve({ code: -120, msg: '相机创建失败' });
+        resolve({
+          code: -120, msg: '相机创建失败'
+        });
       }
     });
   }
@@ -324,7 +334,7 @@ export default class H5Bridge {
             resolve({
               msg: 'catch', code: 210
             });
-          }else {
+          } else {
             uploads(docRes.map(e => copyFileToCache(e))).then((uRes) => {
               resolve(uRes);
             });
@@ -682,6 +692,11 @@ export default class H5Bridge {
   }
 
   public destroy() {
-
+    console.log('destroy ----->', this.emitList);
+    if (this.emitList) {
+      this.emitList.forEach(key => {
+        emitter.off(key);
+      })
+    }
   }
 }

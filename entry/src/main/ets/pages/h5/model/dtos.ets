@@ -56,3 +56,9 @@ export interface UploadDto {
   data?: string;
   list?: Array<string>;
 }
+
+export interface EmitDto {
+  tag?: string|number;
+  key: string;
+  data: object;
+}

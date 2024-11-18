@@ -42,7 +42,7 @@ export interface EmitArg {
   mode?: boolean;
   time?: number; // 时间戳
   key?: string; // 标识
-  event?: string; // 事件
+  event: string; // 事件
   data?: string | object; // 参数
 }
 
@@ -103,6 +103,7 @@ export interface ActionItem {
   text?: string;
   icon?: string;
   key?: string;
+  tag?: string;
   fontWeight?: number;
   color?: string|Color;
 }

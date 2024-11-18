@@ -5,6 +5,7 @@ import H5Bridge from './bridge/H5Bridge';
 import H5Header from './component/H5Header';
 import SharePanel from './component/SharePanel';
 import NavigationSheet from './component/NavigationSheet';
+import { EmitDto } from './model/dtos';
 
 /**
  * Author: Meng
@@ -31,26 +32,16 @@ struct WebPage {
     methodList: this.jsBridge.methodList,
     // asyncMethodList: ["asyncTest"],
   };
-
   @State url: string = 'http://192.168.253.109:8091';
   @State progress: number = 0;
 
   aboutToAppear(): void {
-    emitter.on('web-page', (data: emitter.GenericEventData<string>) => {
-      console.log('------->>>', this.ports.length, data.data)
-      try {
-        const result = '这是需要发送到h5的数据'; // 结果
-        const msg = JSON.stringify({ time: Date.now(), key: '', data: result });
-        this.ports[1].postMessageEvent(msg);
-      } catch (e) {
-        console.log('------> catch', e.code, e.message)
-      }
-    });
+    this.pageEmitHandler();
   }
 
   aboutToDisappear(): void {
     this.jsBridge.destroy();
-    emitter.off('web-page')
+    emitter.off('h5-page')
   }
 
   getMessagePorts() {
@@ -85,10 +76,21 @@ struct WebPage {
     // });
   }
 
+  pageEmitHandler() {
+    emitter.on('h5-page', (data: emitter.GenericEventData<EmitDto>) => {
+      console.log('-------> pageEmitHandler', data.data)
+      try {
+        const msg = JSON.stringify(data);
+        this.ports[1].postMessageEvent(msg);
+      } catch (e) {
+        console.log('------> catch', e.code, e.message)
+      }
+    });
+  }
+
   gitParams() {
 
   }
-
 
   build() {
     Stack({ alignContent: Alignment.Top }) {

@@ -20,6 +20,7 @@ export default struct SharePanel {
       if(res && res.data && res.data.length > 0) {
         this.list = res.data;
         this.visible = true;
+        animateTo({ duration: 3000 }, () => { });
       }else {
         console.warn('share ---> 参数不正确或缺少分享类型');
       }
@@ -83,6 +84,7 @@ export default struct SharePanel {
       .width('100%')
       .height("100%")
       .backgroundColor('rgba(0,0,0,0.5)')
+      .transition({ type: TransitionType.Insert, translate: { x: 0, y: 1000 } })
     }
   }
 }
