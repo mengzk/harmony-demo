@@ -32,11 +32,13 @@ struct WebPage {
     methodList: this.jsBridge.methodList,
     // asyncMethodList: ["asyncTest"],
   };
-  @State url: string = 'http://192.168.253.109:8091';
+
   @State progress: number = 0;
+  @State canBack: boolean = true;
+  @State url: string = 'http://192.168.253.109:8091';
 
   aboutToAppear(): void {
-    this.pageEmitHandler();
+    this.initPageEmit();
   }
 
   aboutToDisappear(): void {
@@ -76,11 +78,23 @@ struct WebPage {
     // });
   }
 
-  pageEmitHandler() {
+  //
+  initPageEmit() {
     emitter.on('h5-page', (data: emitter.GenericEventData<EmitDto>) => {
-      console.log('-------> pageEmitHandler', data.data)
+      console.log('-------> initPageEmit', data.data)
+      const res: EmitDto = data.data||{key: ''};
       try {
-        this.ports[1].postMessageEvent(JSON.stringify(data.data||{}));
+        if(res.key == 'state') {
+          // 更新数据
+          let keys = Object.getOwnPropertyNames(res);
+          keys.forEach(key => {
+            if(key == 'canBack') {
+              this.canBack = res.data?.canBack as boolean;
+            }
+          })
+        }else {
+          this.ports[1].postMessageEvent(JSON.stringify(res));
+        }
       } catch (e) {
         console.log('------> catch', e.code, e.message)
       }

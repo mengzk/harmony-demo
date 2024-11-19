@@ -22,7 +22,7 @@ export interface DeviceDto {
   height: number;
   top: number;
   bottom: number;
-  screen?: object;
+  screen?: Record<string, string|number|boolean>;
   // safeAreaTop: number;
 }
 export interface AppDto {
@@ -60,5 +60,5 @@ export interface UploadDto {
 export interface EmitDto {
   tag?: string|number;
   key: string;
-  data: object;
+  data?: Record<string, string|number|boolean>;
 }

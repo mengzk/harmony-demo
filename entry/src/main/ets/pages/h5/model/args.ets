@@ -9,20 +9,20 @@
  * 相机
  */
 export interface CameraArg {
-  watermark?: boolean;
-  text?: string;
+  content?: Record<string, string|number|boolean>;
   mode?: number; // 0照片；1视频; 2视频或图片
   position?: number; // 1后置,2前置
-  data?: Map<string, string>;
+  // data?: Record<string, string|number|boolean>;
 }
 
 /**
  *
  */
 export interface MediaArg {
-  type?: Array<number>; // 文件类型 1.照片；2.视频
+  mode?: Array<number>; // 文件类型 1word;2ppt;3execl;4pdf
   count?: number;
   upload?: boolean;
+  content?: Record<string, string|number|boolean>;
 }
 
 /**
@@ -32,6 +32,7 @@ export interface PhotoArg {
   count?: number;
   upload?: boolean;
   mode?: number; // 0图片；1视频；2视频和图片
+  content?: Record<string, string|number|boolean>;
 }
 
 /**
@@ -43,7 +44,7 @@ export interface EmitArg {
   time?: number; // 时间戳
   key?: string; // 标识
   event: string; // 事件
-  data?: string | object; // 参数
+  data?: string | Record<string, string|number|boolean>; // 参数
 }
 
 export interface AudioArg {}
@@ -64,7 +65,7 @@ export interface SettingArg {
 
 export interface LinkArg {
   package: string;
-  params?: string | Map<string, object>;
+  params?: string | Record<string, string|number|boolean>;
 }
 
 export interface LocationArg {
@@ -110,7 +111,7 @@ export interface ActionItem {
 
 export interface RouteArg {
   path: string;
-  params?: string | object;
+  params?: string | Record<string, string|number|boolean>;
 }
 
 export interface PayArg {

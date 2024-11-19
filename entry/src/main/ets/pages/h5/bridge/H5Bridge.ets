@@ -170,7 +170,6 @@ export default class H5Bridge {
   openCamera(arg: CameraArg): Promise<UploadDto> {
     let context = getContext(this) as common.Context;
     return new Promise(async (resolve) => {
-
       let cameraPosition = camera.CameraPosition.CAMERA_POSITION_BACK;
       let mediaType = [cameraPicker.PickerMediaType.PHOTO];
 
@@ -748,6 +747,15 @@ export default class H5Bridge {
         message: '缺少路由路径'
       });
     }
+  }
+
+  /**
+   *  h5路由栈 -更新h5是否已经到栈顶
+   */
+  routeStack(canBack: boolean) {
+    emitter.emit("h5-page", {
+      data: {key: 'state', data: {canBack}}
+    })
   }
 
   /**
