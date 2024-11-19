@@ -5,6 +5,7 @@ import H5Bridge from './bridge/H5Bridge';
 import H5Header from './component/H5Header';
 import SharePanel from './component/SharePanel';
 import NavigationSheet from './component/NavigationSheet';
+import ScenarioDialog from './component/ScenarioDialog';
 import { EmitDto } from './model/dtos';
 
 /**
@@ -152,6 +153,8 @@ struct WebPage {
       SharePanel()
       // 导航面板
       NavigationSheet()
+      //
+      ScenarioDialog()
     }
   }
 }

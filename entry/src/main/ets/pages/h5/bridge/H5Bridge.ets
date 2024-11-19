@@ -348,8 +348,8 @@ export default class H5Bridge {
    * 打开设置
    */
   openSetting(arg: SettingArg) {
-    promptAction.showToast({
-      message: '功能暂不支持'
+    emitter.emit('h5-scenario-panel', {
+      data: {mode: 0}
     });
   }
 
