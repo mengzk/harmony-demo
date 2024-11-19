@@ -96,6 +96,7 @@ export interface PageArg {
   theme?: string;
   title?: string;
   hide?: boolean;
+  canBack?: boolean;
   bg?: string|Color;
   actions?: Array<ActionItem>;
 }

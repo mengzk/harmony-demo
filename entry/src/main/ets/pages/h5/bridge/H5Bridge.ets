@@ -753,8 +753,8 @@ export default class H5Bridge {
    *  h5路由栈 -更新h5是否已经到栈顶
    */
   routeStack(canBack: boolean) {
-    emitter.emit("h5-page", {
-      data: {key: 'state', data: {canBack}}
+    emitter.emit("h5-page-title", {
+      data: {canBack}
     })
   }
 

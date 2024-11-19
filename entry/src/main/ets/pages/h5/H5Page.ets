@@ -34,7 +34,6 @@ struct WebPage {
   };
 
   @State progress: number = 0;
-  @State canBack: boolean = true;
   @State url: string = 'http://192.168.253.109:8091';
 
   aboutToAppear(): void {
@@ -86,12 +85,6 @@ struct WebPage {
       try {
         if(res.key == 'state') {
           // 更新数据
-          let keys = Object.getOwnPropertyNames(res);
-          keys.forEach(key => {
-            if(key == 'canBack') {
-              this.canBack = res.data?.canBack as boolean;
-            }
-          })
         }else {
           this.ports[1].postMessageEvent(JSON.stringify(res));
         }

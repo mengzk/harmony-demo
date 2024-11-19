@@ -16,17 +16,21 @@ export default struct H5Header {
     { text: '菜单', key: 'menu', color: Color.Orange },
   ];
   @State visible: boolean = true;
+  @State canBack: boolean = true;
 
   aboutToAppear(): void {
     emitter.on("h5-page-title", (data: emitter.GenericEventData<PageArg>) => {
-      const res = data.data;
-      console.log('page --------> ', JSON.stringify(res));
+      const res = data.data || {};
+      console.log('page-title --------> ', JSON.stringify(res));
       if (res) {
         if (res.title) {
           this.title = res.title;
         }
         if (res.actions) {
           this.actions = res.actions;
+        }
+        if(res.canBack != null) {
+          this.canBack = res.canBack;
         }
         this.visible = !(res.hide||false);
       } else {
@@ -62,7 +66,9 @@ export default struct H5Header {
           .fontColor(Color.Gray)
           .padding({ left: 16, right: 16 })
           .onClick(() => {
-            router.back();
+            if(this.canBack) {
+              router.back();
+            }
           })
         Text(this.title)
           .fontSize(18)
