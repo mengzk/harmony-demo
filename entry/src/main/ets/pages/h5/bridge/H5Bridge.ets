@@ -640,7 +640,7 @@ export default class H5Bridge {
   /**
    * 删除文件
    */
-  deleteFiles(url: string) {
+  deleteFiles(url: Array<string>) {
 
   }
 
