@@ -6,6 +6,14 @@
  */
 import { fileIo as fs } from '@kit.CoreFileKit';
 
+import {axDownload} from './axios'
+import {FileArg} from '../model/args'
+
+/**
+ * 复制文件到缓存
+ * @param path
+ * @returns
+ */
 export function copyFileToCache(path: string): string {
   let name = path.substring(path.lastIndexOf('/'));
   try {
@@ -24,4 +32,34 @@ export function copyFileToCache(path: string): string {
   fs.closeSync(file);
   // fs.closeSync(file2);
   return fileDir;
+}
+
+/**
+ * 保存文件到本地
+ * @param url
+ * @param dir
+ * @param name
+ */
+export function saveFileToDisk(arg: FileArg) {
+  const url = arg.url||"";
+  const dir = arg.dir||"";
+  const name = arg.name||"";
+  if(url.includes('https://') || url.includes('http://')) {
+    axDownload(url, dir, name);
+  }else {
+
+  }
+}
+
+/**
+ * 读取本地文件
+ * @param path
+ * @param dir
+ * @returns
+ */
+export function readFileFromDisk(arg: FileArg): string {
+  const path = arg.path;
+  // const cacheDir = getContext().cacheDir;
+  let file = fs.openSync(path, fs.OpenMode.READ_WRITE);
+  return '';
 }

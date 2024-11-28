@@ -31,9 +31,9 @@ const ossUrl = "https://oss-test.bnq.com.cn/api/fileUpload/uploadFileWithFileSuf
 /**
  * 单文件上传
  */
-export function upload(path: string): Promise<UploadDto> {
+export function axUpload(path: string): Promise<UploadDto> {
   if (path) {
-    return uploadFile(path);
+    return axUploadFile(path);
   }
   return Promise.resolve({ code: -10, msg: '文件不能为空' } as UploadDto);
 }
@@ -41,14 +41,14 @@ export function upload(path: string): Promise<UploadDto> {
 /**
  * 单文件上传
  */
-export function uploads(paths: Array<string>): Promise<UploadDto> {
+export function axUploads(paths: Array<string>): Promise<UploadDto> {
   if (paths.length < 1) {
     return Promise.resolve({ code: -20, msg: '文件不能为空' } as UploadDto);
   }
 
   return new Promise((resolve) => {
     const imgs: string[] = [];
-    Promise.all(paths.map((path) => uploadFile(path)))
+    Promise.all(paths.map((path) => axUploadFile(path)))
       .then((list) => {
         list.forEach((res) => {
           console.info("uploads all ------>", JSON.stringify(res));
@@ -67,7 +67,7 @@ export function uploads(paths: Array<string>): Promise<UploadDto> {
   });
 }
 
-function uploadFile(path: string): Promise<UploadDto> {
+function axUploadFile(path: string): Promise<UploadDto> {
   console.info("uploadFile ------>", path);
   return new Promise((resolve) => {
     const filename = path.substring(path.lastIndexOf('/'));
@@ -100,9 +100,17 @@ function uploadFile(path: string): Promise<UploadDto> {
 }
 
 /**
+ * 删除文件
+ * @param files
+ */
+export function axDeletes(files: Array<string>) {
+
+}
+
+/**
  *  上传多文件
  */
-function uploadFiles(paths: Array<string>): Promise<UploadDto> {
+function axUploadFiles(paths: Array<string>): Promise<UploadDto> {
   const formData = new FormData();
 
   paths.map((path) => {
@@ -131,28 +139,38 @@ function uploadFiles(paths: Array<string>): Promise<UploadDto> {
   });
 }
 
-export function download(url: string) {
-  let filePath = getContext().cacheDir + '/blue.jpg'
-  // Download the file. If the file already exists, delete the existing one first.
+export function axDownload(url: string, dir?: string, fileName?: string): Promise<string|null> {
+  const context = getContext();
+  let name = fileName;
+  if(!fileName && url.includes('.')) {
+    name = url.substring(url.lastIndexOf('/'));
+  }
+  // fs.mkdirSync(dir);
+  let filePath = (dir ? dir : context.cacheDir) + name;
   try {
     fs.accessSync(filePath);
     fs.unlinkSync(filePath);
   } catch (err) {
+    console.log('------> download', JSON.stringify(err));
+    return Promise.resolve(null);
   }
-
-  axios({
-    url,
-    method: 'get',
-    context: getContext(),
-    filePath: filePath,
-    onDownloadProgress: (pro: AxiosProgressEvent) => {
-      if (pro && pro.loaded && pro.total) {
-        // console.log(Math.ceil(pro.loaded / pro.total * 100) + '%');
+  return new Promise((resolve) => {
+    axios({
+      url,
+      context,
+      method: 'get',
+      filePath: filePath,
+      onDownloadProgress: (pro: AxiosProgressEvent) => {
+        if (pro && pro.loaded && pro.total) {
+          // console.log(Math.ceil(pro.loaded / pro.total * 100) + '%');
+        }
       }
-    }
-  }).then((res: AxiosResponse) => {
-    console.log("result: " + JSON.stringify(res.data));
-  }).catch((err: AxiosError) => {
-    console.warn("error:" + JSON.stringify(err));
-  })
+    }).then((res: AxiosResponse) => {
+      console.log("result: " + JSON.stringify(res.data));
+      resolve('')
+    }).catch((err: AxiosError) => {
+      console.warn("error:" + JSON.stringify(err));
+      resolve(null);
+    })
+  });
 }

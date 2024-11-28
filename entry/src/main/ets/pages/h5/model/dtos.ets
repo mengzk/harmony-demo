@@ -7,8 +7,8 @@
 
 export interface Latlng {
   code?: number;
-  lat: number;
-  lng: number;
+  latitude: number;
+  longitude: number;
   speed?: number; // 速度 m/s
   altitude?: number; // 高度
   accuracy?: number; // 精度 单位米
@@ -17,13 +17,17 @@ export interface Latlng {
 }
 
 export interface DeviceDto {
-  deviceName?: string;
   width: number;
   height: number;
-  top: number;
-  bottom: number;
-  screen?: Record<string, string|number|boolean>;
-  // safeAreaTop: number;
+  safeTop: number;
+  safeBottom: number;
+  model: string;
+  deviceName: string;
+  systemName: string;
+  os: number;
+  version: number;
+  appVersion: string;
+  uniqueId: string;
 }
 export interface AppDto {
   version: string;

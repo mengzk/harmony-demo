@@ -42,8 +42,8 @@ export interface EmitArg {
   once?: boolean;
   mode?: boolean;
   time?: number; // 时间戳
-  key?: string; // 标识
-  event: string; // 事件
+  key?: string; // 原生回传标识key -listener使用
+  event: string; // h5监听/原生发送 事件Key
   data?: string | Record<string, string|number|boolean>; // 参数
 }
 
@@ -64,7 +64,8 @@ export interface SettingArg {
 }
 
 export interface LinkArg {
-  package: string;
+  link: string;
+  package?: string;
   params?: string | Record<string, string|number|boolean>;
 }
 
@@ -78,7 +79,7 @@ export interface ShareArg {
 }
 
 export interface ShareItem {
-  mold: number; // 1链接；2图片；2小程序；3微信
+  channel: number; // 10链接；20图片；30微信；40小程序；50企业微信；60飞书
   openId?: string; // 原始id,
   appId?: string;
   title?: string;
@@ -121,9 +122,31 @@ export interface PayArg {
 }
 
 export interface NavArg {
-  lat: number;
-  lng: number;
+  latitude: number;
+  longitude: number;
   name: string;
   address?: string;
 }
 
+export interface PhoneArg {
+  mobile: string;
+  text?: string;
+}
+
+export interface ToastArg {
+  msg: string;
+  icon?: string;
+  duration?: number;
+}
+
+export interface FileArg {
+  url?: string;
+  path?: string;
+  dir?: string;
+  name?: string;
+}
+
+export interface StorageArg {
+  key: string;
+  data: Object;
+}

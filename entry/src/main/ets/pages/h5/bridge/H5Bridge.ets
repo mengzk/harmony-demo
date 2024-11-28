@@ -4,12 +4,14 @@
  * Modify: 2024/11/04
  * Desc: h5与原生交互Api
  */
-import { router, promptAction } from '@kit.ArkUI';
-import { emitter, BusinessError, AsyncCallback } from '@kit.BasicServicesKit';
+
+import display from '@ohos.display';
+import { promptAction } from '@kit.ArkUI';
+import { deviceInfo, emitter, BusinessError } from '@kit.BasicServicesKit';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { scanBarcode, scanCore } from '@kit.ScanKit';
 import { camera, cameraPicker } from '@kit.CameraKit';
-import { common } from '@kit.AbilityKit';
+import { common, Permissions, bundleManager, OpenLinkOptions } from '@kit.AbilityKit';
 import { call, sms } from '@kit.TelephonyKit';
 import { picker as filePicker } from '@kit.CoreFileKit';
 import { geoLocationManager } from '@kit.LocationKit';
@@ -17,10 +19,12 @@ import { sceneMap } from '@kit.MapKit';
 import { filePreview } from '@kit.PreviewKit';
 // import { pdfViewManager, pdfService } from '@kit.PDFKit';
 import { systemShare } from '@kit.ShareKit';
-import { uniformTypeDescriptor as utd } from '@kit.ArkData';
+import { uniformTypeDescriptor as utd, preferences } from '@kit.ArkData';
+import { connection } from '@kit.NetworkKit';
 
-import { copyFileToCache } from '../utils/File';
-import { uploads, upload } from '../utils/axios';
+import { applyPermissions, checkPermissions, openSettingPage } from '../../util/PermissionUtil';
+import { copyFileToCache, saveFileToDisk, readFileFromDisk } from '../utils/File';
+import { axUploads, axUpload, axDeletes } from '../utils/axios';
 import { Latlng, DeviceDto, UserDto, MediaDto, FileDto, AppDto, UploadDto } from '../model/dtos';
 import {
   EmitArg,
@@ -40,46 +44,48 @@ import {
   NavArg,
   RouteArg,
   PageArg,
+  PhoneArg,
+  ToastArg,
+  FileArg,
+  StorageArg,
 } from '../model/args'
 
 export default class H5Bridge {
   methodList: Array<string> = [];
   emitList: Array<string> = [];
+  static dataPFS: preferences.Preferences | null = null;
 
   constructor() {
     this.getMethods(H5Bridge);
+
+    let context = getContext(this) as common.Context;
+    preferences.getPreferences(context, 'H5Store', (err: BusinessError, res: preferences.Preferences) => {
+      if (err) {
+        console.warn("preferences init err " + err.code + ", " + err.message);
+        return;
+      }
+      H5Bridge.dataPFS = res;
+    })
   }
 
   getMethods(obj: ESObject) {
     const filterKey = ['constructor', 'getMethods', 'destroy'];
     let keys = Object.getOwnPropertyNames(obj.prototype);
     keys = keys.filter((key: string) => typeof obj.prototype[key] === 'function' && !filterKey.includes(key));
-    keys.forEach(e => {
-      console.log('--->', e);
-    })
-
     this.methodList = keys;
+    console.log('------>', keys.join(', '));
   }
 
   /**
    * ❗️调用方法
    */
-  invoke(name: string, data: object) {
-
-  }
+  // invoke(name: string, data: object) {}
 
   /**
    * 发送消息
-   * https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/js-apis-emitter-V5#emitteremit
    */
   emit(arg: EmitArg) {
     console.log('emit --->', JSON.stringify(arg));
-    // emitter.on("eventId",  (data: emitter.GenericEventData<string>) => {});
-    // emitter.once("eventId",  (data: emitter.GenericEventData<string>) => {});
-    // emitter.off("eventId");
-    // const eventData = emitter.EventData = { data: '123456' }
-    // emitter.emit("eventId", { data: '123456' });
-
     emitter.emit(arg.event, {
       data: arg.data
     });
@@ -87,25 +93,20 @@ export default class H5Bridge {
 
   /**
    * 添加消息监听
-   * https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/js-apis-emitter-V5#emitteremit
    */
   listener(arg: EmitArg) {
     console.log('listener --->', JSON.stringify(arg));
-    // emitter.on("eventId",  (data: emitter.GenericEventData<string>) => {});
-    // emitter.once("eventId",  (data: emitter.GenericEventData<string>) => {});
-    // emitter.off("eventId");
-    // const eventData = emitter.EventData = { data: '123456' }
-    // emitter.emit("eventId", { data: '123456' });
-    const onEvent = (data: emitter.GenericEventData<object>) => {
-      console.log('listener ------> ', data.data);
+    const onEvent = (data: emitter.GenericEventData<EmitArg>) => {
+      const info = data.data;
+      console.log('listener onEvent ------> ', info);
       emitter.emit('h5-page', {
-        data: data.data
+        data: info
       });
     }
-    this.emitList.push(arg.event);
     if (arg.once) {
       emitter.once(arg.event, onEvent);
     } else {
+      this.emitList.push(arg.event);
       emitter.on(arg.event, onEvent);
     }
   }
@@ -126,6 +127,10 @@ export default class H5Bridge {
     return {};
   }
 
+  getToken(): string {
+    return "";
+  }
+
   /**
    * 退出账号
    */
@@ -136,22 +141,27 @@ export default class H5Bridge {
   /**
    * 登录账号
    */
-  login(tag: string): Promise<UserDto> {
-    return new Promise(resolve => {
-      resolve({});
-    });
+  login(tag: string): UserDto {
+    return {};
   }
-
 
   /**
    * 设备信息
    */
   deviceInfo(): DeviceDto {
+    const screen = display.getDefaultDisplaySync();
     return {
-      width: 0,
-      height: 0,
-      top: 0,
-      bottom: 0
+      width: screen.width,
+      height: screen.height,
+      safeTop: 0,
+      safeBottom: 0,
+      model: deviceInfo.brand,
+      deviceName: deviceInfo.marketName,
+      systemName: deviceInfo.osFullName,
+      os: deviceInfo.majorVersion,
+      version: deviceInfo.buildVersion,
+      appVersion: '',
+      uniqueId: deviceInfo.buildHost,
     };
   }
 
@@ -191,7 +201,7 @@ export default class H5Bridge {
           .then((result: cameraPicker.PickerResult) => {
             console.log('openCamera result', JSON.stringify(result));
             if (result.resultUri) {
-              upload(copyFileToCache(result.resultUri)).then((res) => {
+              axUpload(copyFileToCache(result.resultUri)).then((res) => {
                 resolve(res);
               })
             }
@@ -233,7 +243,7 @@ export default class H5Bridge {
         .then((result: photoAccessHelper.PhotoSelectResult) => {
           uris = result.photoUris;
           console.info('choosePhoto succeed:' + uris);
-          uploads(uris.map(e => copyFileToCache(e))).then((uRes) => {
+          axUploads(uris.map(e => copyFileToCache(e))).then((uRes) => {
             resolve(uRes);
           });
         }).catch((err: BusinessError) => {
@@ -248,22 +258,30 @@ export default class H5Bridge {
   /**
    * 获取媒体文件
    */
-  chooseMedia(arg: MediaArg): Promise<MediaDto> {
-    console.log('----->', arg);
+  chooseMedia(arg: MediaArg): Promise<UploadDto> {
+    // console.log('----->', arg);
     let context = getContext(this) as Context;
     return new Promise(resolve => {
       try {
         let audioSelectOptions = new filePicker.AudioSelectOptions();
         let audioPicker = new filePicker.AudioViewPicker(context);
         audioPicker.select(audioSelectOptions)
-          .then((audioSelectResult: Array<string>) => {
-            console.info('AudioViewPicker success: ' +
-            JSON.stringify(audioSelectResult));
+          .then((result: Array<string>) => {
+            console.info('AudioViewPicker success: ' + JSON.stringify(result));
+            axUploads(result.map(e => copyFileToCache(e))).then((uRes) => {
+              resolve(uRes);
+            });
           }).catch((err: BusinessError) => {
           console.error('AudioViewPicker failed: ' + JSON.stringify(err));
+          resolve({
+            msg: 'catch', code: -1
+          });
         });
       } catch (error) {
         console.error('AudioViewPicker catch: ' + JSON.stringify(error));
+        resolve({
+          msg: 'catch', code: -1
+        });
       }
     });
   }
@@ -271,7 +289,7 @@ export default class H5Bridge {
   /**
    * 预览图片
    */
-  previewImage(arg: PreviewArg) {
+  previewAlbum(arg: PreviewArg) {
     promptAction.showToast({
       message: '功能暂不支持'
     });
@@ -330,7 +348,7 @@ export default class H5Bridge {
               msg: 'catch', code: 210
             });
           } else {
-            uploads(docRes.map(e => copyFileToCache(e))).then((uRes) => {
+            axUploads(docRes.map(e => copyFileToCache(e))).then((uRes) => {
               resolve(uRes);
             });
           }
@@ -347,27 +365,46 @@ export default class H5Bridge {
   /**
    * 打开设置
    */
-  openSetting(arg: SettingArg) {
-    emitter.emit('h5-scenario-panel', {
-      data: {mode: 0}
-    });
+  openSetting() {
+    let context = getContext(this) as common.UIAbilityContext;
+    openSettingPage(context);
   }
 
   /**
    * 打开其他App
    */
-  openApp(arg: LinkArg) {
-    promptAction.showToast({
-      message: '功能暂不支持'
-    });
+  openLink(arg: LinkArg) {
+    try {
+      // let link = 'app1Scheme://test.example.com/home';
+      let canOpen = bundleManager.canOpenLink(arg.link);
+      if (canOpen) {
+        let options: OpenLinkOptions = {
+          appLinkingOnly: false
+        };
+        let context = getContext(this) as common.UIAbilityContext;
+        context.openLink(arg.link, options)
+          .catch((err: BusinessError) => {
+            console.warn(`-------> openLink`, arg.link, JSON.stringify(err));
+            promptAction.showToast({
+              message: '应用打开失败'
+            });
+          });
+      }
+    } catch (e) {
+      console.warn(`-------> openApp`, arg.link, JSON.stringify(e));
+      promptAction.showToast({
+        message: '应用不存在'
+      });
+    }
   }
 
   /**
    * 报打电话
    */
-  callPhone(phone: string) {
+  callPhone(arg: PhoneArg) {
+    const mobile = arg.mobile;
     let context = getContext(this) as Context;
-    call.makeCall(context, phone).then(() => {
+    call.makeCall(context, mobile).then(() => {
       console.log(`makeCall success`);
     }).catch((err: BusinessError) => {
       console.error(`makeCall fail, promise: err->${JSON.stringify(err)}`);
@@ -377,7 +414,9 @@ export default class H5Bridge {
   /**
    * 发送短信
    */
-  sendSms(phone: string, msg: string) {
+  sendSms(arg: PhoneArg) {
+    const mobile = arg.mobile;
+    const msg = arg.text || '';
     let sendCallback = (err: BusinessError, data: sms.ISendShortMessageCallback) => {
       console.log(`sendSms: err->${JSON.stringify(err)}, data->${JSON.stringify(data)}`);
     };
@@ -387,7 +426,7 @@ export default class H5Bridge {
     let options: sms.SendMessageOptions = {
       slotId: 0,
       content: msg,
-      destinationHost: phone,
+      destinationHost: mobile,
       // serviceCenter: '+861xxxxxxxxxx',
       // destinationPort: 1000,
       sendCallback: sendCallback,
@@ -414,8 +453,8 @@ export default class H5Bridge {
         console.log('locationChanger: data: ' + JSON.stringify(res));
         geoLocationManager.off('locationChange', locationChange);
         resolve({
-          lat: res.latitude,
-          lng: res.longitude,
+          latitude: res.latitude,
+          longitude: res.longitude,
           altitude: res.altitude,
           accuracy: res.accuracy,
           speed: res.speed,
@@ -427,7 +466,7 @@ export default class H5Bridge {
       } catch (err) {
         console.error("errCode:" + JSON.stringify(err)); // 201没权限；3301000位置服务不可用；401参数错误
         resolve({
-          lat: 0, lng: 0, code: -1
+          latitude: 0, longitude: 0, code: -1
         })
       }
     });
@@ -450,6 +489,9 @@ export default class H5Bridge {
           console.info("ChooseLocation", "Succeeded in choosing location.");
         })
         .catch((err: BusinessError) => {
+          promptAction.showToast({
+            message: '身份认证失败'
+          });
           // 1002600003 没权限
           console.error("ChooseLocation", `Failed to choose Location, code: ${err.code}, message: ${err.message}`);
         });
@@ -474,12 +516,14 @@ export default class H5Bridge {
           promptAction.showToast({
             message: error.message
           });
+          resolve('');
         });
       } catch (error) {
         console.log(`qrcodeScan Failed to startScanForResult. Code: ${error.code}, message: ${error.message}`);
         promptAction.showToast({
           message: '请开启摄像头权限'
         });
+        resolve('');
       }
     });
   }
@@ -496,19 +540,26 @@ export default class H5Bridge {
   /**
    * 系统分享
    */
-  sysShare(arg: ShareArg) {
-    let data: systemShare.SharedData = new systemShare.SharedData({
-      utd: utd.UniformDataType.PLAIN_TEXT,
-      content: 'Hello HarmonyOS'
-    });
-
-    let controller: systemShare.ShareController = new systemShare.ShareController(data);
-    // 获取UIAbility上下文对象
-    let context: common.UIAbilityContext = getContext(this) as common.UIAbilityContext;
-    controller.show(context, {
-      previewMode: systemShare.SharePreviewMode.DETAIL,
-      selectionMode: systemShare.SelectionMode.SINGLE
-    });
+  sysShare(arg: ShareItem) {
+    // let data: systemShare.SharedData = new systemShare.SharedData({
+    //   utd: utd.UniformDataType.PLAIN_TEXT,
+    //   content: 'Hello HarmonyOS'
+    // });
+    //
+    // let controller: systemShare.ShareController = new systemShare.ShareController(data);
+    // // 获取UIAbility上下文对象
+    // let context: common.UIAbilityContext = getContext(this) as common.UIAbilityContext;
+    // controller.show(context, {
+    //   previewMode: systemShare.SharePreviewMode.DETAIL,
+    //   selectionMode: systemShare.SelectionMode.SINGLE
+    // });
+    // 1链接；20图片；30微信；40小程序；50企业微信
+    switch (arg.channel) {
+      case 1:
+        break;
+      default:
+        break;
+    }
   }
 
   /**
@@ -523,7 +574,7 @@ export default class H5Bridge {
   /**
    * 打开小程序
    */
-  openApplet() {
+  openApplet(arg: ShareItem) {
     promptAction.showToast({
       message: '功能暂不支持'
     });
@@ -552,15 +603,13 @@ export default class H5Bridge {
 
   /**
    * toast提示
-   * @param msg
-   * @param duration
    * @param icon
    */
-  toast(msg: string, duration: number) {
+  toast(arg: ToastArg) {
     console.log('--------> toast');
     promptAction.showToast({
-      message: msg,
-      duration: duration || 2000
+      message: arg.msg,
+      duration: arg.duration || 2000
     });
   }
 
@@ -612,71 +661,83 @@ export default class H5Bridge {
   /**
    * 检查权限
    */
-  checkPermission(permissions: string[]) {
-
+  checkPermission(permissions: Permissions[]): Promise<Array<number>> {
+    return checkPermissions(permissions);
   }
 
   /**
    * 获取权限
    */
-  requestPermission(permissions: string[]) {
-
+  requestPermission(permissions: Permissions[]): Promise<Array<number>> {
+    const context = getContext(this) as common.UIAbilityContext;
+    return applyPermissions(permissions, context);
   }
 
   /**
    * 获取网络状态
    */
-  networkStatus() {
-
+  networkStatus(): string {
+    let netHandle = connection.getAllNetsSync();
+    return netHandle.join(',');
   }
 
   /**
    * 上传文件
    */
   uploadFiles(files: Array<string>): Promise<UploadDto> {
-    return uploads(files.map(e => copyFileToCache(e)));
+    return axUploads(files.map(e => copyFileToCache(e)));
   }
 
   /**
    * 删除文件
    */
-  deleteFiles(url: Array<string>) {
-
+  deleteFiles(urls: Array<string>) {
+    axDeletes(urls);
   }
 
   /**
    * 保存文件
    */
-  saveFile(url: string, name?: string, path?: string) {
-
+  saveFile(arg: FileArg) {
+    saveFileToDisk(arg)
   }
 
   /**
    * 读取文件
    */
-  readFile(url: string, path?: string) {
-
+  readFile(arg: FileArg): string {
+    return readFileFromDisk(arg);
   }
 
   /**
    * 保存数据
    */
-  saveItem(key: string, data: object) {
-
+  setStorage(arg: StorageArg) {
+    if (H5Bridge.dataPFS) {
+      H5Bridge.dataPFS.putSync(arg.key, arg.data);
+    }
   }
 
   /**
    * 获取数据
    */
-  getItem(key: string) {
-
+  getStorage(key: string): preferences.ValueType | undefined {
+    return H5Bridge.dataPFS?.getSync(key, null);
   }
 
   /**
    * 删除数据
    */
-  removeItem(key: string) {
+  removeStorage(key: string) {
+    if (H5Bridge.dataPFS) {
+      H5Bridge.dataPFS.deleteSync(key);
+    }
+  }
 
+  clearStorage() {
+    if (H5Bridge.dataPFS) {
+      H5Bridge.dataPFS.clear();
+    }
   }
 
   /**
@@ -702,10 +763,16 @@ export default class H5Bridge {
    */
   navigate(arg: RouteArg) {
     if (arg.path) {
-      router.pushUrl({
-        url: arg.path,
-        params: arg.params || ''
-      })
+      // let callback: HMRouterPathCallback = {
+      //   onLost() {
+      //     promptAction.showToast({
+      //       message: '页面导航失败'
+      //     });
+      //   }
+      // }
+      // HMRouterMgr.push({
+      //   pageUrl: arg.path, param: arg.params
+      // }, callback)
     } else {
       promptAction.showToast({
         message: '缺少路由路径'
@@ -715,10 +782,16 @@ export default class H5Bridge {
 
   push(arg: RouteArg) {
     if (arg.path) {
-      router.pushUrl({
-        url: arg.path,
-        params: arg.params || ''
-      })
+      // let callback: HMRouterPathCallback = {
+      //   onLost() {
+      //     promptAction.showToast({
+      //       message: '页面打开失败'
+      //     });
+      //   }
+      // }
+      // HMRouterMgr.push({
+      //   pageUrl: arg.path, param: arg.params
+      // }, callback)
     } else {
       promptAction.showToast({
         message: '缺少路由路径'
@@ -730,7 +803,7 @@ export default class H5Bridge {
    * 路由 返回
    */
   back(de: number) {
-    router.back();
+    // HMRouterMgr.pop();
   }
 
   /**
@@ -738,10 +811,16 @@ export default class H5Bridge {
    */
   replace(arg: RouteArg) {
     if (arg.path) {
-      router.replaceUrl({
-        url: arg.path,
-        params: arg.params || ''
-      })
+      // let callback: HMRouterPathCallback = {
+      //   onLost() {
+      //     promptAction.showToast({
+      //       message: '页面切换失败'
+      //     });
+      //   }
+      // }
+      // HMRouterMgr.replace({
+      //   pageUrl: arg.path, param: arg.params
+      // }, callback)
     } else {
       promptAction.showToast({
         message: '缺少路由路径'
@@ -754,7 +833,20 @@ export default class H5Bridge {
    */
   routeStack(canBack: boolean) {
     emitter.emit("h5-page-title", {
-      data: {canBack}
+      data: {
+        canBack
+      }
+    })
+  }
+
+  /**
+   * 重新加载
+   */
+  static reload() {
+    emitter.emit("h5-page", {
+      data: {
+        key: "reload"
+      }
     })
   }
 
@@ -762,11 +854,14 @@ export default class H5Bridge {
    * 获取是否
    */
   isDebug(): boolean {
-    return false;
+    return true;
   }
 
   public destroy() {
     console.log('destroy ----->', this.emitList);
+    if (H5Bridge.dataPFS) {
+      H5Bridge.dataPFS = null;
+    }
     if (this.emitList) {
       this.emitList.forEach(key => {
         emitter.off(key);
