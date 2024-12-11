@@ -82,7 +82,7 @@ export default struct H5Header {
     if (this.visible) {
       Row() {
         Row() {
-          Image($r('app.media.ic_back_arrow_title')).width(10).height(18)
+          // Image($r('app.media.ic_back_arrow_title')).width(10).height(18)
         }
         .width('23%')
         .padding({ left: 16 })

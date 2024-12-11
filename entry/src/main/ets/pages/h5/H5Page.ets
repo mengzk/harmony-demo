@@ -8,7 +8,6 @@ import H5Header from './component/H5Header';
 import SharePanel from './component/SharePanel';
 import NavigationSheet from './component/NavigationSheet';
 import { EmitDto } from './model/dtos';
-import { Routers } from '../../router/Routers';
 import { ActionItem, PageArg } from "./model/args";
 
 /**
@@ -55,9 +54,9 @@ const _postMessage = `function bindPostMessage() {
 bindPostMessage();
 `;
 
-@HMRouter({ pageUrl: Routers.PTCustomWebPage, dialog: false })
+@Entry
 @Component
-export struct H5Page {
+struct H5Page {
   controller: webview.WebviewController = new webview.WebviewController();
   ports: webview.WebMessagePort[] = [];
   // 注入可执行js代码
@@ -183,10 +182,6 @@ export struct H5Page {
 
   build() {
     Stack({ alignContent: Alignment.Top }) {
-      Image($r('app.media.normal_bg'))
-        .width('100%')
-        .height('100%')
-        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
       Column() {
         H5Header({ back: this.onBack })
         // 进度条
