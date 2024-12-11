@@ -5,32 +5,27 @@
  * Desc: 数据类型
  */
 
-export interface Latlng {
-  code?: number;
-  latitude: number;
-  longitude: number;
-  speed?: number; // 速度 m/s
-  altitude?: number; // 高度
-  accuracy?: number; // 精度 单位米
-  address?: string;
-  name?: string;
-}
-
 export interface DeviceDto {
   width: number;
   height: number;
+  vpWidth: number;
+  vpHeight: number;
+  vpTop: number;
+  vpBottom: number;
   safeTop: number;
   safeBottom: number;
+  headerHeight: number;
   model: string;
   deviceName: string;
   systemName: string;
   os: number;
   version: number;
-  appVersion: string;
+  appVersion: number;
+  appVersionName: string;
   uniqueId: string;
 }
 export interface AppDto {
-  version: string;
+  version?: string;
   env?: string;
 }
 export interface UserDto {

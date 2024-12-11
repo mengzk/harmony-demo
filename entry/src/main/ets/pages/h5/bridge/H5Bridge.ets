@@ -8,24 +8,34 @@
 import display from '@ohos.display';
 import { promptAction } from '@kit.ArkUI';
 import { deviceInfo, emitter, BusinessError } from '@kit.BasicServicesKit';
-import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { scanBarcode, scanCore } from '@kit.ScanKit';
-import { camera, cameraPicker } from '@kit.CameraKit';
 import { common, Permissions, bundleManager, OpenLinkOptions } from '@kit.AbilityKit';
 import { call, sms } from '@kit.TelephonyKit';
-import { picker as filePicker } from '@kit.CoreFileKit';
-import { geoLocationManager } from '@kit.LocationKit';
-import { sceneMap } from '@kit.MapKit';
-import { filePreview } from '@kit.PreviewKit';
-// import { pdfViewManager, pdfService } from '@kit.PDFKit';
 import { systemShare } from '@kit.ShareKit';
-import { uniformTypeDescriptor as utd, preferences } from '@kit.ArkData';
+import { preferences } from '@kit.ArkData';
 import { connection } from '@kit.NetworkKit';
+import { HMRouterMgr, HMRouterPathCallback } from '@hadss/hmrouter';
+import { AppUtil } from '@pura/harmony-utils';
 
-import { applyPermissions, checkPermissions, openSettingPage } from '../../util/PermissionUtil';
-import { copyFileToCache, saveFileToDisk, readFileFromDisk } from '../utils/File';
-import { axUploads, axUpload, axDeletes } from '../utils/axios';
-import { Latlng, DeviceDto, UserDto, MediaDto, FileDto, AppDto, UploadDto } from '../model/dtos';
+import {
+  initAudio,
+  recorderStart,
+  recorderPause,
+  recorderStop,
+  recorderRelease,
+  recorderResume
+} from '../../../util/RecorderUtil';
+import { formatNum } from '../../../util/CommonUtil';
+import { getCurLocation, LatLng } from '../../../util/LocationUtil';
+import { audioPlayer, playerAction } from '../../../util/AudioPlayerUtil'
+import { playerMediaLive, playerMediaVideo } from '../../../util/MediaVideoutil';
+import { getCameraInfo, formatStorage, getCameraCache, startContinuousShooting } from '../../../util/InstaCamareUtil'
+import { openSysCamera, chooseSysAlbum, chooseAudioFile, chooseDocument } from '../../../util/PhotoAlbumUtil';
+import { applyPermissions, checkPermissions, openSettingPage, LOCATION } from '../../../util/PermissionUtil';
+import { openFiles } from '../../../util/PreviewUtil';
+import { copyFileToCache, saveFileToDisk, readFileFromDisk, deleteFileFromDisk } from '../../../util/FileUtil';
+import { axUploads, axUpload, axDownload } from '../../../module/fileAxios';
+import { DeviceDto, UserDto, UploadDto } from '../model/dtos';
 import {
   EmitArg,
   CameraArg,
@@ -34,8 +44,7 @@ import {
   AudioArg,
   PlayArg,
   PreviewArg,
-  FolderArg,
-  SettingArg,
+  DocsArg,
   LocationArg,
   LinkArg,
   ShareArg,
@@ -47,6 +56,8 @@ import {
   PhoneArg,
   ToastArg,
   FileArg,
+  ReadArg,
+  DownArg,
   StorageArg,
 } from '../model/args'
 
@@ -65,7 +76,9 @@ export default class H5Bridge {
         return;
       }
       H5Bridge.dataPFS = res;
-    })
+    });
+
+    initAudio(context);
   }
 
   getMethods(obj: ESObject) {
@@ -131,6 +144,10 @@ export default class H5Bridge {
     return "";
   }
 
+  getSessionToken(no: boolean): string {
+    return "";
+  }
+
   /**
    * 退出账号
    */
@@ -150,17 +167,27 @@ export default class H5Bridge {
    */
   deviceInfo(): DeviceDto {
     const screen = display.getDefaultDisplaySync();
+    const version = AppUtil.getVersionCode();
+    const versionName = AppUtil.getVersionName();
+    const top = AppUtil.getStatusBarHeight();
+    const bottom = AppUtil.getNavigationIndicatorHeight();
     return {
       width: screen.width,
       height: screen.height,
-      safeTop: 0,
-      safeBottom: 0,
+      vpWidth: px2vp(screen.width),
+      vpHeight: px2vp(screen.height),
+      vpBottom: px2vp(bottom),
+      vpTop: px2vp(top),
+      headerHeight: 48,
+      safeTop: top,
+      safeBottom: bottom,
       model: deviceInfo.brand,
       deviceName: deviceInfo.marketName,
       systemName: deviceInfo.osFullName,
       os: deviceInfo.majorVersion,
       version: deviceInfo.buildVersion,
-      appVersion: '',
+      appVersion: version,
+      appVersionName: versionName,
       uniqueId: deviceInfo.buildHost,
     };
   }
@@ -168,10 +195,8 @@ export default class H5Bridge {
   /**
    * 获取应用信息
    */
-  appInfo(): AppDto {
-    return {
-      version: '0.0.1'
-    }
+  appInfo(): Object {
+    return AppUtil.getBundleInfoSync();
   }
 
   /**
@@ -179,46 +204,29 @@ export default class H5Bridge {
    */
   openCamera(arg: CameraArg): Promise<UploadDto> {
     let context = getContext(this) as common.Context;
-    return new Promise(async (resolve) => {
-      let cameraPosition = camera.CameraPosition.CAMERA_POSITION_BACK;
-      let mediaType = [cameraPicker.PickerMediaType.PHOTO];
-
-      if (arg.position == 2) {
-        cameraPosition = camera.CameraPosition.CAMERA_POSITION_FRONT;
-      }
-
-      if (arg.mode == 1) {
-        mediaType = [cameraPicker.PickerMediaType.VIDEO];
-      } else if (arg.mode == 2) {
-        mediaType = [cameraPicker.PickerMediaType.PHOTO, cameraPicker.PickerMediaType.VIDEO];
-      }
-
-      try {
-        let pickerProfile: cameraPicker.PickerProfile = {
-          cameraPosition
-        };
-        cameraPicker.pick(context, mediaType, pickerProfile)
-          .then((result: cameraPicker.PickerResult) => {
-            console.log('openCamera result', JSON.stringify(result));
-            if (result.resultUri) {
-              axUpload(copyFileToCache(result.resultUri)).then((res) => {
-                resolve(res);
-              })
+    if (arg.content) {
+      // 水印照片
+      return new Promise((resolve) => {
+        HMRouterMgr.push({
+          pageUrl: 'BNQCamera', param: {
+            upload: true, content: arg.content
+          }
+        }, {
+          onResult: (res) => {
+            // console.log('-------> ', JSON.stringify(res.result)); // file://media/Photo/105/IMG_1733297998_093/1733297898674.jpg"
+            if (res?.result && typeof res.result == 'string') {
+              resolve({
+                code: 0, msg: 'ok', data: res.result
+              });
             }
-          })
-          .catch((err: BusinessError) => {
-            console.log(`openCamera catch: ${err.code}, ${err.message}`);
-            resolve({
-              code: -100, msg: '相机打开失败'
-            });
-          })
-      } catch (error) {
-        console.error(`openCamera error code: ${error.code}`);
-        resolve({
-          code: -120, msg: '相机创建失败'
+          },
         });
-      }
-    });
+      });
+    }
+    return openSysCamera(context, arg.mode, arg.position)
+      .then(res => {
+        return axUpload(copyFileToCache(res));
+      });
   }
 
   /**
@@ -226,32 +234,8 @@ export default class H5Bridge {
    */
   chooseAlbum(arg: PhotoArg): Promise<UploadDto> {
     // console.log('-----> ', JSON.stringify(arg))
-    const photoSelectArgs = new photoAccessHelper.PhotoSelectOptions();
-    photoSelectArgs.maxSelectNumber = arg.count || 9; // 选择媒体文件的最大数目
-    photoSelectArgs.MIMEType = photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE; // 过滤选择媒体文件类型为IMAGE
-    if (arg.mode == 1) {
-      photoSelectArgs.MIMEType = photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE;
-    } else if (arg.mode == 2) {
-      photoSelectArgs.MIMEType = photoAccessHelper.PhotoViewMIMETypes.IMAGE_VIDEO_TYPE;
-    }
-
-    let uris: Array<string> = [];
-    const photoViewPicker = new photoAccessHelper.PhotoViewPicker();
-
-    return new Promise(resolve => {
-      photoViewPicker.select(photoSelectArgs)
-        .then((result: photoAccessHelper.PhotoSelectResult) => {
-          uris = result.photoUris;
-          console.info('choosePhoto succeed:' + uris);
-          axUploads(uris.map(e => copyFileToCache(e))).then((uRes) => {
-            resolve(uRes);
-          });
-        }).catch((err: BusinessError) => {
-        console.error(`choosePhoto failed, code is ${err.code}, message is ${err.message}`);
-        resolve({
-          msg: 'catch', code: -1
-        });
-      })
+    return chooseSysAlbum(arg.mode || 0, arg.count).then(paths => {
+      return axUploads(paths.map(e => copyFileToCache(e)));
     });
   }
 
@@ -261,105 +245,46 @@ export default class H5Bridge {
   chooseMedia(arg: MediaArg): Promise<UploadDto> {
     // console.log('----->', arg);
     let context = getContext(this) as Context;
-    return new Promise(resolve => {
-      try {
-        let audioSelectOptions = new filePicker.AudioSelectOptions();
-        let audioPicker = new filePicker.AudioViewPicker(context);
-        audioPicker.select(audioSelectOptions)
-          .then((result: Array<string>) => {
-            console.info('AudioViewPicker success: ' + JSON.stringify(result));
-            axUploads(result.map(e => copyFileToCache(e))).then((uRes) => {
-              resolve(uRes);
-            });
-          }).catch((err: BusinessError) => {
-          console.error('AudioViewPicker failed: ' + JSON.stringify(err));
-          resolve({
-            msg: 'catch', code: -1
-          });
-        });
-      } catch (error) {
-        console.error('AudioViewPicker catch: ' + JSON.stringify(error));
-        resolve({
-          msg: 'catch', code: -1
-        });
-      }
-    });
+    return chooseAudioFile(context).then(paths => {
+      return axUploads(paths.map(e => copyFileToCache(e)));
+    })
+  }
+
+  /**
+   * 打开文件夹
+   */
+  chooseDocs(arg: DocsArg): Promise<UploadDto> {
+    let context = getContext(this) as Context;
+    return chooseDocument(context, arg.count || 9, arg.fileTypes).then(paths => {
+      return axUploads(paths.map(e => copyFileToCache(e)));
+    })
   }
 
   /**
    * 预览图片
    */
   previewAlbum(arg: PreviewArg) {
-    promptAction.showToast({
-      message: '功能暂不支持'
-    });
+    console.log(JSON.stringify(arg))
+    if (arg.video) {
+      if (arg.url) {
+        playerMediaVideo(arg.url);
+      }
+    } else {
+
+    }
+    // promptAction.showToast({
+    //   message: '功能暂不支持'
+    // });
   }
 
   /**
    * 预览文档
    */
   previewDocs(arg: PreviewArg) {
-    let uiContext = getContext(this);
-    let displayInfo: filePreview.DisplayInfo = {
-      x: 100,
-      y: 100,
-      width: 800,
-      height: 800
-    };
-    let fileInfo: filePreview.PreviewInfo = {
-      title: '1.txt',
-      uri: 'file://docs/storage/Users/currentUser/Documents/1.txt',
-      mimeType: 'text/plain'
-    };
-    filePreview.openPreview(uiContext, fileInfo, displayInfo, (err) => {
-      if (err && err.code) {
-        console.error(`Failed to open preview, err.code = ${err.code}, err.message = ${err.message}`);
-        return;
-      }
-      console.info('Succeeded in opening preview');
-    });
-
-    // 多文件预览
-    // let files: Array<filePreview.PreviewInfo> = new Array();
-    // files.push(fileInfo);
-    // filePreview.openPreview(uiContext, files, 0).then(() => {
-    //   console.info('Succeeded in opening preview');
-    // }).catch((err: BusinessError) => {
-    //   console.error(`Failed to open preview, err.code = ${err.code}, err.message = ${err.message}`);
-    // });
-  }
-
-  /**
-   * 打开文件夹
-   */
-  openFolder(arg: FolderArg): Promise<UploadDto> {
-    return new Promise((resolve) => {
-      try {
-        let context = getContext(this) as Context;
-        let docSelectOptions = new filePicker.DocumentSelectOptions();
-        docSelectOptions.maxSelectNumber = 9;
-        docSelectOptions.fileSuffixFilters = ['docx', 'ptx', 'xlsx', 'pdf'];
-        let documentPicker = new filePicker.DocumentViewPicker(context);
-        documentPicker.select(docSelectOptions, (err: BusinessError, docRes: Array<string>) => {
-          console.info('openFolder: ' + JSON.stringify(docRes));
-          if (err) {
-            console.error('openFolder failed: ' + JSON.stringify(err));
-            resolve({
-              msg: 'catch', code: 210
-            });
-          } else {
-            axUploads(docRes.map(e => copyFileToCache(e))).then((uRes) => {
-              resolve(uRes);
-            });
-          }
-        });
-      } catch (error) {
-        console.error('openFolder catch: ' + JSON.stringify(error));
-        resolve({
-          msg: 'catch', code: 220
-        });
-      }
-    });
+    let context = getContext(this) as common.UIAbilityContext;
+    // applyPermissions(['ohos.permission.READ_WRITE_DOCUMENTS_DIRECTORY'], context).then(() => {
+    openFiles(arg.data || [], context);
+    // })
   }
 
   /**
@@ -378,11 +303,10 @@ export default class H5Bridge {
       // let link = 'app1Scheme://test.example.com/home';
       let canOpen = bundleManager.canOpenLink(arg.link);
       if (canOpen) {
-        let options: OpenLinkOptions = {
-          appLinkingOnly: false
-        };
         let context = getContext(this) as common.UIAbilityContext;
-        context.openLink(arg.link, options)
+        context.openLink(arg.link, {
+          appLinkingOnly: false
+        })
           .catch((err: BusinessError) => {
             console.warn(`-------> openLink`, arg.link, JSON.stringify(err));
             promptAction.showToast({
@@ -390,12 +314,22 @@ export default class H5Bridge {
             });
           });
       }
-    } catch (e) {
-      console.warn(`-------> openApp`, arg.link, JSON.stringify(e));
+    } catch (err) {
+      console.warn(`-------> openApp`, arg.link, JSON.stringify(err));
       promptAction.showToast({
         message: '应用不存在'
       });
     }
+  }
+
+  canOpenLink(arg: LinkArg): boolean {
+    let canOpen = false;
+    try {
+      canOpen = bundleManager.canOpenLink(arg.link);
+    } catch (err) {
+      console.warn(`-------> canOpenLink`, arg.link, JSON.stringify(err));
+    }
+    return canOpen;
   }
 
   /**
@@ -426,76 +360,42 @@ export default class H5Bridge {
     let options: sms.SendMessageOptions = {
       slotId: 0,
       content: msg,
+      // serviceCenter: mobile,
       destinationHost: mobile,
-      // serviceCenter: '+861xxxxxxxxxx',
       // destinationPort: 1000,
       sendCallback: sendCallback,
       deliveryCallback: deliveryCallback
     };
+    // 需要权限
     sms.sendShortMessage(options, (err: BusinessError) => {
       console.log(`callback: err->${JSON.stringify(err)}`);
+      if (err.code == 201) {
+        promptAction.showToast({
+          message: '没有权限'
+        });
+      }
     });
   }
 
   /**
    * 获取位置
    */
-  getLocation(arg: LocationArg): Promise<Latlng> {
-    return new Promise((resolve) => {
-      let requestInfo: geoLocationManager.LocationRequest = {
-        'priority': geoLocationManager.LocationRequestPriority.FIRST_FIX,
-        'scenario': geoLocationManager.LocationRequestScenario.UNSET,
-        'timeInterval': 1,
-        'distanceInterval': 0,
-        'maxAccuracy': 0
-      };
-      let locationChange = (res: geoLocationManager.Location): void => {
-        console.log('locationChanger: data: ' + JSON.stringify(res));
-        geoLocationManager.off('locationChange', locationChange);
-        resolve({
-          latitude: res.latitude,
-          longitude: res.longitude,
-          altitude: res.altitude,
-          accuracy: res.accuracy,
-          speed: res.speed,
-          code: 0
-        })
-      };
-      try {
-        geoLocationManager.on('locationChange', requestInfo, locationChange);
-      } catch (err) {
-        console.error("errCode:" + JSON.stringify(err)); // 201没权限；3301000位置服务不可用；401参数错误
-        resolve({
+  getLocation(arg: LocationArg): Promise<LatLng> {
+    let context = getContext(this) as common.UIAbilityContext;
+    return applyPermissions(LOCATION, context).then(res => {
+      const canUse = res.some(e => e == -1);
+      if (!canUse) {
+        return getCurLocation(context, arg.cache);
+      } else {
+        return {
           latitude: 0, longitude: 0, code: -1
-        })
+        };
       }
     });
   }
 
-  chooseAddress(): Promise<Latlng> {
+  chooseAddress(): Promise<LatLng> {
     return new Promise((resolve) => {
-      let locationChoosingOptions: sceneMap.LocationChoosingOptions = {
-        location: {
-          latitude: 39.92194051376904, longitude: 116.3971836796932
-        },
-        // language: 'zh_CN',
-        // 展示搜索控件
-        searchEnabled: true,
-        // 展示附近Poi
-        showNearbyPoi: true
-      };
-      sceneMap.chooseLocation(getContext(this) as common.UIAbilityContext, locationChoosingOptions)
-        .then((data) => {
-          console.info("ChooseLocation", "Succeeded in choosing location.");
-        })
-        .catch((err: BusinessError) => {
-          promptAction.showToast({
-            message: '身份认证失败'
-          });
-          // 1002600003 没权限
-          console.error("ChooseLocation", `Failed to choose Location, code: ${err.code}, message: ${err.message}`);
-        });
-
     });
   }
 
@@ -503,28 +403,18 @@ export default class H5Bridge {
    * 扫码
    */
   qrcodeScan(): Promise<string> {
-    return new Promise((resolve) => {
-      let options: scanBarcode.ScanOptions = {
-        scanTypes: [scanCore.ScanType.ALL], enableMultiMode: true, enableAlbum: true
-      };
-      try {
-        scanBarcode.startScanForResult(getContext(this), options).then((result: scanBarcode.ScanResult) => {
-          console.log(`qrcodeScan Succeeded ${JSON.stringify(result)}`);
-          resolve(result.originalValue);
-        }).catch((error: BusinessError) => {
-          console.log(`qrcodeScan Failed to get ScanResult Code: ${error.code}, message: ${error.message}`);
-          promptAction.showToast({
-            message: error.message
-          });
-          resolve('');
-        });
-      } catch (error) {
-        console.log(`qrcodeScan Failed to startScanForResult. Code: ${error.code}, message: ${error.message}`);
-        promptAction.showToast({
-          message: '请开启摄像头权限'
-        });
-        resolve('');
-      }
+    let options: scanBarcode.ScanOptions = {
+      scanTypes: [scanCore.ScanType.ALL], enableMultiMode: true, enableAlbum: true
+    };
+    return scanBarcode.startScanForResult(getContext(this), options).then((result: scanBarcode.ScanResult) => {
+      // console.log(`qrcodeScan Succeeded ${JSON.stringify(result)}`);
+      return result.originalValue;
+    }).catch((error: BusinessError) => {
+      console.log(`-----> qrcodeScan err: ${error.code}, ${error.message}`);
+      promptAction.showToast({
+        message: error.message
+      });
+      return '';
     });
   }
 
@@ -541,18 +431,6 @@ export default class H5Bridge {
    * 系统分享
    */
   sysShare(arg: ShareItem) {
-    // let data: systemShare.SharedData = new systemShare.SharedData({
-    //   utd: utd.UniformDataType.PLAIN_TEXT,
-    //   content: 'Hello HarmonyOS'
-    // });
-    //
-    // let controller: systemShare.ShareController = new systemShare.ShareController(data);
-    // // 获取UIAbility上下文对象
-    // let context: common.UIAbilityContext = getContext(this) as common.UIAbilityContext;
-    // controller.show(context, {
-    //   previewMode: systemShare.SharePreviewMode.DETAIL,
-    //   selectionMode: systemShare.SelectionMode.SINGLE
-    // });
     // 1链接；20图片；30微信；40小程序；50企业微信
     switch (arg.channel) {
       case 1:
@@ -599,6 +477,7 @@ export default class H5Bridge {
     promptAction.showToast({
       message: '功能暂不支持'
     });
+    // playerMediaLive(id); // 直播的线路
   }
 
   /**
@@ -634,19 +513,67 @@ export default class H5Bridge {
   /**
    * 录音
    */
-  record(args: AudioArg) {
-    promptAction.showToast({
-      message: '功能暂不支持'
-    });
+  record(arg: AudioArg): Promise<string> {
+    //
+    const uploadAudio = (path: string): Promise<string> => {
+      console.log('----> uploadAudio', path);
+      return axUpload(path).then((uRes) => {
+        console.log('----> axUpload', JSON.stringify(uRes));
+        return uRes.data || '';
+      }).catch(() => '');
+    }
+
+    switch (arg.action) {
+      case 'start':
+        return recorderStart((ms) => {
+          const min = formatNum(Math.floor((ms / 1000) / 60));
+          const sco = formatNum(Math.round((ms / 1000) % 60));
+          emitter.emit('h5-page', {
+            data: {
+              key: 'audioRecorder',
+              data: {
+                time: `${min}:${sco}:00`
+              }
+            }
+          });
+        });
+      case 'pause':
+        recorderPause();
+        return Promise.resolve('');
+      case 'resume':
+        recorderResume();
+        return Promise.resolve('');
+      case 'stop':
+        return recorderStop().then((res) => {
+          return (res || '').length > 0 ? uploadAudio(res) : res;
+        });
+      case 'play':
+        audioPlayer(arg.url || '');
+        return Promise.resolve('');
+      case 'pausePlay':
+        playerAction('pause', 0);
+        return Promise.resolve('');
+      case 'resumePlay':
+        playerAction('resume', 0);
+        return Promise.resolve('');
+      case 'stopPlay':
+        playerAction('stop', 0);
+        return Promise.resolve('');
+      default:
+        recorderRelease();
+        return Promise.resolve('');
+    }
   }
 
   /**
    * 媒体播放
    */
-  mediaPlayer(args: PlayArg) {
-    promptAction.showToast({
-      message: '功能暂不支持'
-    });
+  audioPlayer(arg: PlayArg) {
+    if (arg.url && arg.action) {
+      audioPlayer(arg.url);
+    } else {
+      playerAction(arg.action, arg.time);
+    }
   }
 
   /**
@@ -684,28 +611,46 @@ export default class H5Bridge {
   /**
    * 上传文件
    */
-  uploadFiles(files: Array<string>): Promise<UploadDto> {
-    return axUploads(files.map(e => copyFileToCache(e)));
+  uploadFile(files: Array<string>): Promise<UploadDto> {
+    return axUploads(files);
+  }
+
+  /**
+   * 下栽文件
+   */
+  downloadFile(arg: DownArg): Promise<string> {
+    if (arg && arg.url && arg.url.length > 0) {
+      return axDownload(arg.url);
+    }
+    return Promise.resolve('');
   }
 
   /**
    * 删除文件
    */
-  deleteFiles(urls: Array<string>) {
-    axDeletes(urls);
+  deleteFiles(paths: Array<string>) {
+    if (paths && paths.length > 0) {
+      for (let i = 0; i < paths.length; i++) {
+        deleteFileFromDisk(paths[0]);
+      }
+    }
   }
 
   /**
    * 保存文件
    */
   saveFile(arg: FileArg) {
+    if (!arg.dir) {
+      const context = getContext(this);
+      arg.dir = context.filesDir;
+    }
     saveFileToDisk(arg)
   }
 
   /**
    * 读取文件
    */
-  readFile(arg: FileArg): string {
+  readFile(arg: ReadArg): Promise<string> {
     return readFileFromDisk(arg);
   }
 
@@ -744,6 +689,7 @@ export default class H5Bridge {
    * 清除缓存
    */
   clearCache() {
+    emitter.emit("h5-page", {data: {key: 'clear' }})
     promptAction.showToast({
       message: '清除缓存已清除'
     });
@@ -763,16 +709,16 @@ export default class H5Bridge {
    */
   navigate(arg: RouteArg) {
     if (arg.path) {
-      // let callback: HMRouterPathCallback = {
-      //   onLost() {
-      //     promptAction.showToast({
-      //       message: '页面导航失败'
-      //     });
-      //   }
-      // }
-      // HMRouterMgr.push({
-      //   pageUrl: arg.path, param: arg.params
-      // }, callback)
+      let callback: HMRouterPathCallback = {
+        onLost() {
+          promptAction.showToast({
+            message: '页面导航失败'
+          });
+        }
+      }
+      HMRouterMgr.push({
+        pageUrl: arg.path, param: arg.params
+      }, callback)
     } else {
       promptAction.showToast({
         message: '缺少路由路径'
@@ -782,16 +728,16 @@ export default class H5Bridge {
 
   push(arg: RouteArg) {
     if (arg.path) {
-      // let callback: HMRouterPathCallback = {
-      //   onLost() {
-      //     promptAction.showToast({
-      //       message: '页面打开失败'
-      //     });
-      //   }
-      // }
-      // HMRouterMgr.push({
-      //   pageUrl: arg.path, param: arg.params
-      // }, callback)
+      let callback: HMRouterPathCallback = {
+        onLost() {
+          promptAction.showToast({
+            message: '页面打开失败'
+          });
+        }
+      }
+      HMRouterMgr.push({
+        pageUrl: arg.path, param: arg.params
+      }, callback)
     } else {
       promptAction.showToast({
         message: '缺少路由路径'
@@ -803,7 +749,7 @@ export default class H5Bridge {
    * 路由 返回
    */
   back(de: number) {
-    // HMRouterMgr.pop();
+    HMRouterMgr.pop();
   }
 
   /**
@@ -811,16 +757,16 @@ export default class H5Bridge {
    */
   replace(arg: RouteArg) {
     if (arg.path) {
-      // let callback: HMRouterPathCallback = {
-      //   onLost() {
-      //     promptAction.showToast({
-      //       message: '页面切换失败'
-      //     });
-      //   }
-      // }
-      // HMRouterMgr.replace({
-      //   pageUrl: arg.path, param: arg.params
-      // }, callback)
+      let callback: HMRouterPathCallback = {
+        onLost() {
+          promptAction.showToast({
+            message: '页面切换失败'
+          });
+        }
+      }
+      HMRouterMgr.replace({
+        pageUrl: arg.path, param: arg.params
+      }, callback)
     } else {
       promptAction.showToast({
         message: '缺少路由路径'
@@ -842,7 +788,7 @@ export default class H5Bridge {
   /**
    * 重新加载
    */
-  static reload() {
+  reload() {
     emitter.emit("h5-page", {
       data: {
         key: "reload"
@@ -851,10 +797,46 @@ export default class H5Bridge {
   }
 
   /**
+   * 获取连接状态
+   */
+  getInstaInfo() {
+    promptAction.showToast({
+      message: '功能在不支持'
+    });
+  }
+
+  /**
+   * 格式化存储
+   */
+  formatInstaStorage() {
+    promptAction.showToast({
+      message: '功能在不支持'
+    });
+  }
+
+  /**
+   * 获取缓存
+   */
+  formatInstaCache() {
+    promptAction.showToast({
+      message: '功能在不支持'
+    });
+  }
+
+  /**
+   * 开始拍摄
+   */
+  startInstaShoot() {
+    promptAction.showToast({
+      message: '功能在不支持'
+    });
+  }
+
+  /**
    * 获取是否
    */
   isDebug(): boolean {
-    return true;
+    return AppUtil.getAppInfoSync().debug;
   }
 
   public destroy() {
@@ -862,10 +844,16 @@ export default class H5Bridge {
     if (H5Bridge.dataPFS) {
       H5Bridge.dataPFS = null;
     }
-    if (this.emitList) {
-      this.emitList.forEach(key => {
-        emitter.off(key);
-      })
+    if (this.emitList && this.emitList.length > 0) {
+      try {
+        this.emitList.forEach(key => {
+          emitter.off(key);
+        });
+      } catch (err) {
+        console.log(err);
+      }
     }
+    playerAction('stop', 0);
+    recorderRelease();
   }
 }

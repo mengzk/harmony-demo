@@ -8,20 +8,29 @@
 import { emitter } from "@kit.BasicServicesKit";
 import { NavArg } from "../model/args";
 
+interface MapItem {
+  text: string;
+  tag: number;
+}
+
 @Component
 export default struct NavigationSheet {
   @State visible: boolean = false;
-  @State list: string[] = ['高德地图', '百度地图', '腾讯地图'];
+  @State list: MapItem[] = [
+    { text: '高德地图', tag: 1 },
+    { text: '百度地图', tag: 2 },
+    { text: '腾讯地图', tag: 3 },
+  ];
   private address?: NavArg;
 
   aboutToAppear(): void {
     emitter.on("h5-navigation-sheet", (data: emitter.GenericEventData<NavArg>) => {
       // console.log('navigation --------> ', data);
       const res = data.data;
-      if(res) {
+      if (res) {
         this.address = res;
         this.visible = true;
-      }else {
+      } else {
         console.warn('navigation ---> 导航参数不正确');
       }
     });
@@ -35,27 +44,38 @@ export default struct NavigationSheet {
     this.visible = false;
   }
 
-  onItemClick(item: string) {
+  onItemClick(tag: number) {
     this.visible = false;
-
-    console.log('----->', item)
+    console.log('----->', tag, this.address);
+    if(this.address) {
+      // 地址不能为空
+      return
+    }
+    switch (tag) {
+      case 1:
+        break;
+      case 2:
+        break;
+      default:
+        break;
+    }
   }
 
   @Builder
-  itemView(tag: string) {
+  itemView(item: MapItem) {
     Row() {
-      Text(tag).fontColor(Color.Black)
+      Text(item.text).fontColor(Color.Black)
     }
     .height(48)
     .justifyContent(FlexAlign.Center)
-    .onClick(this.onItemClick.bind(this, tag))
+    .onClick(this.onItemClick.bind(this, item.tag))
   }
 
   build() {
-    if(this.visible) {
+    if (this.visible) {
       Flex({ alignItems: ItemAlign.End }) {
         Column() {
-          ForEach(this.list, (item: string) => {
+          ForEach(this.list, (item: MapItem) => {
             this.itemView(item)
           })
 
@@ -65,7 +85,7 @@ export default struct NavigationSheet {
           .width('100%')
           .height(48)
           .justifyContent(FlexAlign.Center)
-          .border({width: { top: 1 }, color: Color.Orange, style: {top: BorderStyle.Solid}})
+          .border({ width: { top: 1 }, color: '#e3e3e3', style: { top: BorderStyle.Solid } })
           .onClick(this.onClose.bind(this))
         }
         .backgroundColor(Color.White)

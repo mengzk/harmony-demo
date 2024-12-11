@@ -5,11 +5,16 @@
  * Desc: 数据类型
  */
 
+
+interface CellItem {
+  label: string;
+  value?: string;
+}
 /**
  * 相机
  */
 export interface CameraArg {
-  content?: Record<string, string|number|boolean>;
+  content?: Array<CellItem>;
   mode?: number; // 0照片；1视频; 2视频或图片
   position?: number; // 1后置,2前置
   // data?: Record<string, string|number|boolean>;
@@ -47,17 +52,28 @@ export interface EmitArg {
   data?: string | Record<string, string|number|boolean>; // 参数
 }
 
-export interface AudioArg {}
+export interface AudioArg {
+  action: string;
+  url?: string;
+}
 
-export interface PlayArg {}
+export interface PlayArg {
+  url: string;
+  action: string;
+  time?: number;
+}
 
 export interface PreviewArg {
-  type?: string;
+  video?: boolean;
   data?: Array<string>;
+  url?: string;
   index?: number;
 }
 
-export interface FolderArg {}
+export interface DocsArg {
+  fileTypes?: Array<string>; // 文件类型 ['docx', 'ptx', 'xlsx', 'pdf']
+  count?: number;
+}
 
 export interface SettingArg {
   package: string;
@@ -71,6 +87,7 @@ export interface LinkArg {
 
 export interface LocationArg {
   high?: boolean;
+  cache?: boolean;
 }
 
 export interface ShareArg {
@@ -87,8 +104,11 @@ export interface ShareItem {
   image?: string; // 封面cover
   path?: string;
   url?: string;
+  link: string;
   scene?: string;
   ticket?: string;
+  itemName?: string;
+  itemIcon?: string;
   /** 0: 正式, 1: 测试, 2: 体验 */
   env?: 0 | 1 | 2;
 }
@@ -142,11 +162,26 @@ export interface ToastArg {
 export interface FileArg {
   url?: string;
   path?: string;
-  dir?: string;
+  dir: string;
   name?: string;
+  data?: string;
+  dataType?: string; // 数据类型 -base64,https,file
+}
+
+export interface ReadArg {
+  url?: string;
+  path?: string;
+  data?: string;
+  dataType?: string; // 数据类型 -base64,https,file
 }
 
 export interface StorageArg {
   key: string;
   data: Object;
+}
+
+export interface DownArg {
+  url: string;
+  dir?: string;
+  outside?: boolean;
 }

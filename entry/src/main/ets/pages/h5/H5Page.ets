@@ -1,92 +1,134 @@
 import { webview } from '@kit.ArkWeb';
-import { emitter } from '@kit.BasicServicesKit';
+import { BusinessError, emitter } from '@kit.BasicServicesKit';
+import { HMRouter, HMRouterMgr } from '@hadss/hmrouter';
+import { AppUtil } from '@pura/harmony-utils';
 
 import H5Bridge from './bridge/H5Bridge';
 import H5Header from './component/H5Header';
 import SharePanel from './component/SharePanel';
 import NavigationSheet from './component/NavigationSheet';
-import ScenarioDialog from './component/ScenarioDialog';
 import { EmitDto } from './model/dtos';
+import { Routers } from '../../router/Routers';
+import { ActionItem, PageArg } from "./model/args";
 
 /**
  * Author: Meng
  * Date: 2024/11/04
  * Modify: 2024/11/04
- * Desc: h5与原生交互Api
- *
- * https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/ts-basic-components-web-V5
- * https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/web-app-page-data-channel-V5
+ * Desc: h5加载容器
  */
-@Entry
+
+interface ParamOption {
+  title?: string;
+  hideNav?: boolean;
+  supportShare?: boolean;
+}
+
+interface MiniProgram {
+  appId: string;
+  path?: string;
+  version?: string;
+  downloadUrl?: string;
+}
+
+interface H5Params {
+  url: string;
+  title?: string;
+  option?: ParamOption;
+  miniProgram?: MiniProgram;
+  supportShare?: boolean;
+}
+
+// 替换 h5 postMessage 向原生发送消息
+const _postMessage = `function bindPostMessage() {
+  let hmPort = {postMessage: (arg) => {console.log("---> postMessage unbound", arg);}};
+  window.postMessage = (arg) => {
+      hmPort.postMessage(arg);
+  }
+  window.addEventListener("message", (e) => {
+    console.log("---> hm port bind", e);
+    if (e != null && e.data === "__hmos_port" && e.ports != null) {
+      hmPort = e.ports[0];
+    }
+  });
+}
+bindPostMessage();
+`;
+
+@HMRouter({ pageUrl: Routers.PTCustomWebPage, dialog: false })
 @Component
-struct WebPage {
+export struct H5Page {
   controller: webview.WebviewController = new webview.WebviewController();
   ports: webview.WebMessagePort[] = [];
-  private localStorage: string =
-    "if (typeof(Storage) !== 'undefined') {localStorage.setItem('color', 'Red');}";
-  private scripts: Array<ScriptItem> = [{ script: this.localStorage, scriptRules: ["*"] }];
+  // 注入可执行js代码
+  private localStorage: string = "if (typeof(Storage) !== 'undefined') {localStorage.setItem('color', 'Red');}";
+  // private scripts: Array<ScriptItem> = [{ script: this.localStorage, scriptRules: ["*"] }];
   private jsBridge: H5Bridge = new H5Bridge();
   private jsp: JavaScriptProxy = {
     name: "bnq",
     object: this.jsBridge,
     controller: this.controller,
     methodList: this.jsBridge.methodList,
-    // asyncMethodList: ["asyncTest"],
   };
-
+  private pageParams: H5Params | null = null;
   @State progress: number = 0;
-  @State url: string = 'http://192.168.253.109:8091';
+  @State url: string = '';
+  @State scripts: Array<ScriptItem> = [{ script: this.localStorage, scriptRules: ["*"] }];
 
   aboutToAppear(): void {
     this.initPageEmit();
+    this.parseParams();
+  }
+
+  onBackPress() {
+    return this.onBack();
   }
 
   aboutToDisappear(): void {
     this.jsBridge.destroy();
     emitter.off('h5-page')
+    this.clearCache();
+  }
+
+  onBack = (): boolean => {
+    if (this.controller.accessStep(-1)) {
+      this.controller.backward();
+      return true;
+    } else {
+      return false;
+    }
   }
 
   getMessagePorts() {
     // 配置Web开启调试模式
     // webview.WebviewController.setWebDebuggingAccess(true);
 
-    // const userAgent = this.controller.getUserAgent() + '-hmos';
+    // const custom = this.controller.getCustomUserAgent()
+    // const userAgent = this.controller.getUserAgent() + ' baianjuapp_ju/1.0.1';
     // this.controller.setCustomUserAgent(userAgent);
-
-    this.controller.clearHistory();
-    this.controller.clearSslCache();
+    this.scripts = [{ script: _postMessage, scriptRules: ["*"] }];
 
     this.ports = this.controller.createWebMessagePorts();
     this.ports[1].onMessageEvent((result) => {
-      console.log('-----> onMessageEvent', result)
+      console.log('-----> onMessageEvent', result);
     });
 
     this.controller.postMessage('__hmos_port', [this.ports[0]], '*');
-
-    // window.addEventListener("message", (e) => {
-    //   console.log("message----->", e);
-    //   if (e != null && e.data === "__hmos_port" && e.ports != null) {
-    //     h5Port = e.ports[0]; // 1. 保存从应用侧发送过来的端口。
-    //     if (h5Port != null) {
-    //       h5Port.onmessage = (event) => {
-    //         // 2. 接收ets侧发送过来的消息。
-    //         const result = event.data;
-    //         console.log("h5Port----->", result);
-    //       };
-    //     }
-    //   }
-    // });
   }
 
   //
   initPageEmit() {
     emitter.on('h5-page', (data: emitter.GenericEventData<EmitDto>) => {
       console.log('-------> initPageEmit', data.data)
-      const res: EmitDto = data.data||{key: ''};
+      const res: EmitDto = data.data || { key: '' };
       try {
-        if(res.key == 'state') {
+        if (res.key == 'state') {
           // 更新数据
-        }else {
+        } else if (res.key == 'reload') {
+          this.controller.refresh();
+        } else if (res.key == 'clear') {
+          this.clearCache();
+        } else {
           this.ports[1].postMessageEvent(JSON.stringify(res));
         }
       } catch (e) {
@@ -95,14 +137,58 @@ struct WebPage {
     });
   }
 
-  gitParams() {
+  // 解析参数
+  parseParams() {
+    const params = HMRouterMgr.getCurrentParam() as H5Params;
+    this.pageParams = params;
+    const options: PageArg = {};
+    const actions: Array<ActionItem> = [];
 
+    if (params.url) {
+      this.url = params.url.trim();
+    }
+    // 解析参数
+    if (params.title) {
+      options.title = params.title;
+    }
+    if (params.supportShare) {
+      actions.push({ icon: 'share_icon', key: 'share' });
+    }
+    if (params.option) {
+      const hasShare = actions.some(e => e.key == 'share');
+      if (!hasShare && params.option.supportShare) {
+        actions.push({ icon: 'share_icon', key: 'share' });
+      }
+      options.hide = params.option.hideNav;
+    }
+    // 赋值参数
+    options.actions = actions;
+    emitter.emit('h5-page-title', { data: options });
+    // 小程序 -住小橙没有
+    // if(params.miniProgram) {}
+  }
+
+  clearCache() {
+    try {
+      this.controller.clearHistory();
+      this.controller.removeCache(true);
+    } catch (err) {
+      if(err as BusinessError) {
+        console.warn(`Web clear err: ${err.code}, ${err.message}`);
+      }else {
+        console.warn(`Web clear err: ${JSON.stringify(err)}`);
+      }
+    }
   }
 
   build() {
     Stack({ alignContent: Alignment.Top }) {
+      Image($r('app.media.normal_bg'))
+        .width('100%')
+        .height('100%')
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
       Column() {
-        H5Header()
+        H5Header({ back: this.onBack })
         // 进度条
         if (this.progress < 100) {
           Progress({ value: this.progress, type: ProgressType.Linear })
@@ -117,17 +203,17 @@ struct WebPage {
           .geolocationAccess(true)
           .cacheMode(CacheMode.None)
           .copyOptions(CopyOptions.None)
-          .webStandardFont("sans-serif")
           .javaScriptOnDocumentStart(this.scripts)
           .keyboardAvoidMode(WebKeyboardAvoidMode.RESIZE_VISUAL)
           .onPageBegin((event) => {
             if (event) {
-              console.log('begin url:' + event.url);
+              const userAgent = this.controller.getUserAgent() + ' baianjuapp_ju_' + AppUtil.getVersionName();
+              this.controller.setCustomUserAgent(userAgent);
             }
           })
           .onPageEnd((event) => {
             if (event) {
-              console.log('end url:' + event.url);
+              console.log('------> page end: ' + event.url);
               this.getMessagePorts();
             }
           })
@@ -139,7 +225,8 @@ struct WebPage {
           })
           .onTitleReceive((event) => {
             if (event) {
-              console.log('title:' + event.title);
+              // console.log('------> title', event.title);
+              emitter.emit('h5-page-title', { data: { title: event.title } });
             }
           })
           .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
@@ -147,14 +234,11 @@ struct WebPage {
       }
       .width('100%')
       .height("100%")
-      .backgroundColor(Color.White)
 
       // 分享面板
       SharePanel()
       // 导航面板
       NavigationSheet()
-      //
-      ScenarioDialog()
     }
   }
 }

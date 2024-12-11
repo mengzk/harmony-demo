@@ -3,6 +3,7 @@
   "description": "Please describe the basic information.",
   "dependencies": {
     "@pura/harmony-utils": "^1.2.3",
+    "@hadss/hmrouter": "^1.0.0-rc.10",
     "@ohos/axios": "^2.2.4",
     "@ohos/crypto-js": "^2.0.4"
   },

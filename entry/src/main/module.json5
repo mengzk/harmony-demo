@@ -35,16 +35,15 @@
             ],
             "actions": [
               "action.system.home"
-            ]
-          },
-          {
-            "actions": ["ohos.want.action.viewData"],
+            ],
             "uris": [
               {
                 "scheme": "link",
                 "host": "dev.test01.com"
               }
-            ]
+            ],
+            "domainVerify": false,
+            "permissions": []
           }
         ]
       }

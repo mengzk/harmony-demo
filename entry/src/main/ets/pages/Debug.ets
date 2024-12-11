@@ -7,11 +7,25 @@
 import window from '@ohos.window';
 import display from '@ohos.display';
 import { emitter } from "@kit.BasicServicesKit";
+import { HMRouterMgr } from '@hadss/hmrouter';
+
+import { getEnvText } from '../http/ConfigData'
 
 interface Position { x: number; y: number; }
 
 const boxWidth = vp2px(52);
 const boxHeight = vp2px(80);
+
+@Extend(Text)
+function baseText () {
+  .width('100%')
+  .fontSize(14)
+  .lineHeight(20)
+  .fontWeight(600)
+  .fontColor(Color.White)
+  .textAlign(TextAlign.Center)
+  .borderRadius(3)
+}
 
 @Entry
 @Component
@@ -27,7 +41,7 @@ struct Debug {
   @State visible: boolean = true;
 
   aboutToAppear() {
-    this.curEnv = "test";
+    this.curEnv = getEnvText();
     const screen = display.getDefaultDisplaySync();
     this.screenWidth = screen.width - boxWidth;
     this.screenHeight = screen.height - boxHeight;
@@ -42,7 +56,7 @@ struct Debug {
 
     emitter.on("app-debug-window", (data: emitter.GenericEventData<boolean>) => {
       // 打开/关闭窗口|更新环境
-      this.curEnv = "test";
+      this.curEnv = getEnvText();
       if (data.data) {
         this.visible = true;
         this.subWindow?.resize(boxWidth, boxHeight);
@@ -67,6 +81,13 @@ struct Debug {
       case 2:
         break;
       default:
+        // http://192.168.253.109:8012/home
+        HMRouterMgr.push({pageUrl: 'PTCustomWebPage', param: {url: 'https://z.bnq.com.cn/app/verify.html'}});
+        // HMRouterMgr.push({ pageUrl: 'BNQCamera', param: {upload: true, content: [{label: '测试：', value: '这是传进来的数据'}]} }, {
+        //     onResult: (res) => {
+        //       console.log('-------> ', JSON.stringify(res.result)); // {"path":"file://media/Photo/105/IMG_1733297998_093/1733297898674.jpg"}
+        //     }
+        // });
         break
     }
   }
@@ -109,45 +130,23 @@ struct Debug {
       Column() {
         if (this.isSide) {
           Text(this.curEnv)
-            .width('100%')
-            .fontSize(14)
+            .baseText()
             .fontWeight(700)
-            .fontColor(Color.White)
-            .textAlign(TextAlign.Center)
-            .borderRadius(3)
             .backgroundColor(Color.Red)
             .position({ x: 20, y: 20 })
             .rotate({ x: 0, y: 0, z: 1, angle: 90 })
         } else {
           Text(this.message)
-            .width('100%')
-            .fontSize(14)
-            .lineHeight(20)
-            .fontWeight(600)
-            .fontColor(Color.White)
-            .textAlign(TextAlign.Center)
-            .borderRadius(3)
+            .baseText()
             .backgroundColor(Color.Red)
             .onClick(this.onItemTap.bind(this, 1))
           Text(this.curEnv)
-            .width('100%')
-            .fontSize(14)
-            .lineHeight(20)
-            .fontWeight(600)
-            .fontColor(Color.White)
-            .textAlign(TextAlign.Center)
-            .margin({ top: 10, bottom: 10 })
-            .borderRadius(3)
+            .baseText()
             .backgroundColor(Color.Orange)
+            .margin({ top: 10, bottom: 10 })
             .onClick(this.onItemTap.bind(this, 2))
           Text('GO')
-            .width('100%')
-            .fontSize(14)
-            .lineHeight(20)
-            .fontWeight(600)
-            .fontColor(Color.White)
-            .textAlign(TextAlign.Center)
-            .borderRadius(3)
+            .baseText()
             .backgroundColor(Color.Blue)
             .onClick(this.onItemTap.bind(this, 3))
         }
