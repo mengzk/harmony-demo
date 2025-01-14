@@ -9,12 +9,11 @@ import display from '@ohos.display';
 import { emitter } from "@kit.BasicServicesKit";
 import { HMRouterMgr } from '@hadss/hmrouter';
 
-import { getEnvText } from '../http/ConfigData'
-
 interface Position { x: number; y: number; }
 
 const boxWidth = vp2px(52);
 const boxHeight = vp2px(80);
+const getEnvText = () => 'test';
 
 @Extend(Text)
 function baseText () {
